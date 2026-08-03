@@ -1,0 +1,144 @@
+{
+  "schema_version": "1.0",
+  "snapshot_date": "2026-05-01",
+  "notes": [
+    "THIS IS A DATED SNAPSHOT, NOT LIVE DATA. It exists so the module produces an auditable number offline and with no API keys. Every quote sourced from it is tagged quality=baseline and its confidence decays with age.",
+    "Configure at least one live provider before quoting a residual value to a customer. See docs/market-data.md for the options and what each costs.",
+    "Metals are quoted in USD per metric tonne, the market convention. The FX layer converts to the caller's currency.",
+    "Battery-grade salts (nickel/cobalt sulphate, lithium carbonate) trade against assessed indices, not exchanges. The levels here are representative mid-cycle values, not assessments."
+  ],
+  "materials": {
+    "nickel_metal": {
+      "price": 15500.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "LME nickel cash settlement, representative level",
+      "volatility_annual": 0.30
+    },
+    "nickel_sulphate": {
+      "price": 4100.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Battery-grade NiSO4.6H2O, 22.3% Ni contained",
+      "volatility_annual": 0.28
+    },
+    "cobalt_metal": {
+      "price": 40000.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Standard-grade cobalt, representative level",
+      "volatility_annual": 0.42
+    },
+    "cobalt_sulphate": {
+      "price": 8500.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Battery-grade CoSO4.7H2O, 21.0% Co contained",
+      "volatility_annual": 0.40
+    },
+    "lithium_carbonate": {
+      "price": 12500.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Battery-grade Li2CO3 99.5%, CIF Asia representative level",
+      "volatility_annual": 0.55
+    },
+    "lithium_hydroxide": {
+      "price": 11500.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Battery-grade LiOH.H2O, CIF Asia representative level",
+      "volatility_annual": 0.55
+    },
+    "copper_metal": {
+      "price": 9800.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "LME copper grade A cash settlement, representative level",
+      "volatility_annual": 0.20
+    },
+    "aluminium_metal": {
+      "price": 2600.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "LME aluminium high grade cash settlement, representative level",
+      "volatility_annual": 0.18
+    },
+    "manganese_sulphate": {
+      "price": 950.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Battery-grade MnSO4.H2O, 32.5% Mn contained",
+      "volatility_annual": 0.22
+    },
+    "lead_metal": {
+      "price": 2000.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "LME lead cash settlement, representative level",
+      "volatility_annual": 0.16
+    },
+    "steel_scrap": {
+      "price": 350.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "HMS 1&2 ferrous scrap, representative level",
+      "volatility_annual": 0.20
+    },
+    "graphite_flake": {
+      "price": 650.0,
+      "currency": "USD",
+      "unit": "t",
+      "reference": "Natural flake graphite 94-95% C, FOB China representative level",
+      "volatility_annual": 0.18
+    }
+  },
+  "systems": {
+    "notes": [
+      "Reference prices for whole battery systems, used by the reuse and second-life pathways rather than the recycling pathway.",
+      "new_pack_price is the BloombergNEF-style volume-weighted average lithium-ion PACK price, the anchor for what a replacement unit is worth new.",
+      "turnkey_bess_price is a fully installed 4-hour stationary system, the product a repurposed pack competes against.",
+      "oem_replacement_pack_price is the retail over-the-counter price of a new OEM traction pack, which is far above the OEM's own cost and sets the ceiling for a used replacement pack."
+    ],
+    "new_pack_price": {
+      "price": 108.0,
+      "currency": "USD",
+      "unit": "kWh",
+      "reference": "Volume-weighted average Li-ion pack price, BNEF-style annual survey basis"
+    },
+    "turnkey_bess_price": {
+      "price": 165.0,
+      "currency": "USD",
+      "unit": "kWh",
+      "reference": "Fully installed 4-hour utility-scale BESS, representative level"
+    },
+    "oem_replacement_pack_price": {
+      "price": 480.0,
+      "currency": "EUR",
+      "unit": "kWh",
+      "reference": "Retail OEM EV replacement pack, excluding labour; varies widely by model"
+    },
+    "lfp_pack_price": {
+      "price": 92.0,
+      "currency": "USD",
+      "unit": "kWh",
+      "reference": "LFP pack price, typically 12-18% below the blended average"
+    }
+  },
+  "fx_fallback": {
+    "notes": "EUR-based reference rates used only when the ECB feed is unreachable. Units are foreign currency per 1 EUR.",
+    "as_of": "2026-05-01",
+    "rates": {
+      "EUR": 1.0,
+      "USD": 1.12,
+      "GBP": 0.845,
+      "CHF": 0.94,
+      "CNY": 8.05,
+      "JPY": 168.0,
+      "SEK": 11.15,
+      "NOK": 11.60,
+      "PLN": 4.26,
+      "KRW": 1520.0
+    }
+  }
+}

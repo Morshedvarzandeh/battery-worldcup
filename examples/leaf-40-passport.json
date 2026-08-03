@@ -1,0 +1,31 @@
+{
+  "batteryPassport": {
+    "generalInformation": {
+      "batteryPassportId": "urn:uuid:6f1c2e40-2b7a-4f1e-9d3a-11c0a4d5e881",
+      "manufacturerName": "Automotive Energy Supply Corporation",
+      "batteryModel": "AESC Gen2",
+      "vehicleModel": "Nissan Leaf ZE1 40 kWh",
+      "manufacturingDate": "2019-03-14",
+      "manufacturingPlace": "JP",
+      "batteryCategory": "EV battery",
+      "batteryMass": { "value": 303, "unit": "kg" }
+    },
+    "performanceAndDurability": {
+      "ratedCapacity": { "value": 40, "unit": "kWh" },
+      "nominalVoltage": { "value": 350, "unit": "V" },
+      "stateOfHealth": { "value": 81, "unit": "%" },
+      "numberOfFullCycles": 850,
+      "roundTripEfficiency": { "value": 93, "unit": "%" },
+      "measurementDate": "2026-06-30"
+    },
+    "materialComposition": {
+      "batteryChemistry": "Li-NMC 532",
+      "criticalRawMaterials": [
+        { "substance": "Cobalt", "massKg": 7.1 },
+        { "substance": "Lithium", "massKg": 4.0 },
+        { "substance": "Nickel", "massKg": 17.4 }
+      ]
+    },
+    "circularity": { "safetyFlags": [] }
+  }
+}

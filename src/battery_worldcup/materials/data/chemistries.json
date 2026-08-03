@@ -1,0 +1,382 @@
+{
+  "schema_version": "1.0",
+  "updated": "2026-08-03",
+  "basis": "pack",
+  "notes": [
+    "material_intensity_kg_per_kwh is expressed per kWh of RATED (nameplate) energy at PACK level, i.e. it already includes busbars, enclosure and module hardware.",
+    "Only economically payable elements are listed. Everything else in the pack (separator, binder, electrolyte solvent, plastics, wiring insulation) is treated as inert mass by the BOM builder and carries no recovery revenue.",
+    "These are indicative industry defaults used ONLY when a passport does not declare its own composition. EU Regulation 2023/1542 Annex XIII requires declaration of cobalt, lithium, nickel and lead content, so for a compliant passport the declared values take precedence.",
+    "Elements use IUPAC symbols. 'C' denotes anode graphite specifically.",
+    "typical_cycle_life_to_80pct is full equivalent cycles to 80% state of health under typical automotive duty. It sets the denominator for remaining-life estimates when a passport gives cycle count but no state of health."
+  ],
+  "sources": [
+    "Argonne National Laboratory, BatPaC v5 battery pack design model",
+    "IEA, Global EV Outlook - critical mineral intensity of EV batteries",
+    "Transport & Environment, 'From dirty oil to clean batteries' material demand modelling",
+    "EU Regulation 2023/1542, Annex XIII (passport data) and Annex XII (recycling efficiency)"
+  ],
+  "chemistries": {
+    "NMC811": {
+      "label": "Lithium nickel manganese cobalt oxide 8:1:1",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.8Mn0.1Co0.1O2",
+      "anode": "graphite",
+      "aliases": [
+        "nmc811",
+        "nmc-811",
+        "nmc 811",
+        "ncm811",
+        "li-nmc-811",
+        "lithium nickel manganese cobalt oxide 811"
+      ],
+      "typical_pack_kg_per_kwh": 6.2,
+      "typical_cell_wh_per_kg": 250,
+      "typical_cycle_life_to_80pct": 1500,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.72,
+        "Co": 0.09,
+        "Mn": 0.085,
+        "Li": 0.098,
+        "Cu": 0.6,
+        "Al": 1.1,
+        "Fe": 0.45,
+        "C": 1.0
+      },
+      "second_life_suitability": 0.85,
+      "notes": "High nickel content gives the strongest recycling economics of the mainstream chemistries."
+    },
+    "NMC622": {
+      "label": "Lithium nickel manganese cobalt oxide 6:2:2",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.6Mn0.2Co0.2O2",
+      "anode": "graphite",
+      "aliases": [
+        "nmc622",
+        "nmc-622",
+        "nmc 622",
+        "ncm622",
+        "li-nmc-622"
+      ],
+      "typical_pack_kg_per_kwh": 6.5,
+      "typical_cell_wh_per_kg": 230,
+      "typical_cycle_life_to_80pct": 1800,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.53,
+        "Co": 0.18,
+        "Mn": 0.17,
+        "Li": 0.1,
+        "Cu": 0.62,
+        "Al": 1.15,
+        "Fe": 0.47,
+        "C": 1.02
+      },
+      "second_life_suitability": 0.85
+    },
+    "NMC712": {
+      "label": "Lithium nickel manganese cobalt oxide 7:1:2",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.7Mn0.2Co0.1O2",
+      "anode": "graphite",
+      "aliases": [
+        "nmc712",
+        "nmc-712",
+        "nmc 712",
+        "ncm712",
+        "li-nmc-712"
+      ],
+      "typical_pack_kg_per_kwh": 6.35,
+      "typical_cell_wh_per_kg": 240,
+      "typical_cycle_life_to_80pct": 1600,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.63,
+        "Co": 0.09,
+        "Mn": 0.17,
+        "Li": 0.099,
+        "Cu": 0.61,
+        "Al": 1.12,
+        "Fe": 0.46,
+        "C": 1.01
+      },
+      "second_life_suitability": 0.85,
+      "notes": "Widely used in the VW MEB platform. Naming is genuinely ambiguous in the industry: '712' is read here as Ni7/Mn2/Co1, the low-cobalt formulation that is the whole point of the chemistry, rather than Ni7/Mn1/Co2. If your supplier means the higher-cobalt variant, override the composition in the passport."
+    },
+    "NMC532": {
+      "label": "Lithium nickel manganese cobalt oxide 5:3:2",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.5Mn0.3Co0.2O2",
+      "anode": "graphite",
+      "aliases": [
+        "nmc532",
+        "nmc-532",
+        "nmc 532",
+        "ncm532",
+        "li-nmc-532"
+      ],
+      "typical_pack_kg_per_kwh": 6.8,
+      "typical_cell_wh_per_kg": 220,
+      "typical_cycle_life_to_80pct": 2000,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.44,
+        "Co": 0.18,
+        "Mn": 0.26,
+        "Li": 0.1,
+        "Cu": 0.64,
+        "Al": 1.18,
+        "Fe": 0.48,
+        "C": 1.04
+      },
+      "second_life_suitability": 0.85
+    },
+    "NMC111": {
+      "label": "Lithium nickel manganese cobalt oxide 1:1:1",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.33Mn0.33Co0.33O2",
+      "anode": "graphite",
+      "aliases": [
+        "nmc111",
+        "nmc-111",
+        "nmc 111",
+        "ncm111",
+        "nmc333"
+      ],
+      "typical_pack_kg_per_kwh": 7.2,
+      "typical_cell_wh_per_kg": 200,
+      "typical_cycle_life_to_80pct": 2000,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.31,
+        "Co": 0.31,
+        "Mn": 0.29,
+        "Li": 0.11,
+        "Cu": 0.68,
+        "Al": 1.22,
+        "Fe": 0.5,
+        "C": 1.08
+      },
+      "second_life_suitability": 0.8,
+      "notes": "Older chemistry; high cobalt makes it disproportionately valuable to recyclers."
+    },
+    "NCA": {
+      "label": "Lithium nickel cobalt aluminium oxide",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.8Co0.15Al0.05O2",
+      "anode": "graphite",
+      "aliases": [
+        "nca",
+        "li-nca",
+        "lithium nickel cobalt aluminium oxide",
+        "lithium nickel cobalt aluminum oxide"
+      ],
+      "typical_pack_kg_per_kwh": 6.0,
+      "typical_cell_wh_per_kg": 260,
+      "typical_cycle_life_to_80pct": 1500,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 0.73,
+        "Co": 0.14,
+        "Li": 0.1,
+        "Cu": 0.58,
+        "Al": 1.08,
+        "Fe": 0.44,
+        "C": 0.98
+      },
+      "second_life_suitability": 0.8
+    },
+    "LFP": {
+      "label": "Lithium iron phosphate",
+      "family": "li-ion",
+      "cathode_formula": "LiFePO4",
+      "anode": "graphite",
+      "aliases": [
+        "lfp",
+        "lifepo4",
+        "lifepo",
+        "lithium iron phosphate",
+        "lithium-iron-phosphate",
+        "li-fe-po4"
+      ],
+      "typical_pack_kg_per_kwh": 7.0,
+      "typical_cell_wh_per_kg": 170,
+      "typical_cycle_life_to_80pct": 4000,
+      "material_intensity_kg_per_kwh": {
+        "Li": 0.09,
+        "Fe": 1.02,
+        "Cu": 0.7,
+        "Al": 1.25,
+        "C": 1.1
+      },
+      "second_life_suitability": 0.95,
+      "notes": "No nickel or cobalt, so recycling revenue is usually below treatment cost: the recycling pathway often returns a NEGATIVE value (a gate fee). LFP's long cycle life makes second life the dominant value route. Fe intensity folds cathode iron into the steel/iron scrap stream."
+    },
+    "LMFP": {
+      "label": "Lithium manganese iron phosphate",
+      "family": "li-ion",
+      "cathode_formula": "LiMn0.6Fe0.4PO4",
+      "anode": "graphite",
+      "aliases": [
+        "lmfp",
+        "limnfepo4",
+        "lithium manganese iron phosphate"
+      ],
+      "typical_pack_kg_per_kwh": 6.6,
+      "typical_cell_wh_per_kg": 190,
+      "typical_cycle_life_to_80pct": 3000,
+      "material_intensity_kg_per_kwh": {
+        "Li": 0.088,
+        "Fe": 0.62,
+        "Mn": 0.42,
+        "Cu": 0.66,
+        "Al": 1.2,
+        "C": 1.06
+      },
+      "second_life_suitability": 0.9
+    },
+    "LMO": {
+      "label": "Lithium manganese oxide",
+      "family": "li-ion",
+      "cathode_formula": "LiMn2O4",
+      "anode": "graphite",
+      "aliases": [
+        "lmo",
+        "limn2o4",
+        "lithium manganese oxide",
+        "spinel"
+      ],
+      "typical_pack_kg_per_kwh": 8.0,
+      "typical_cell_wh_per_kg": 150,
+      "typical_cycle_life_to_80pct": 800,
+      "material_intensity_kg_per_kwh": {
+        "Li": 0.105,
+        "Mn": 0.92,
+        "Cu": 0.75,
+        "Al": 1.35,
+        "Fe": 0.55,
+        "C": 1.15
+      },
+      "second_life_suitability": 0.6,
+      "notes": "Poor calendar life; second-life buyers discount heavily."
+    },
+    "LCO": {
+      "label": "Lithium cobalt oxide",
+      "family": "li-ion",
+      "cathode_formula": "LiCoO2",
+      "anode": "graphite",
+      "aliases": [
+        "lco",
+        "licoo2",
+        "lithium cobalt oxide"
+      ],
+      "typical_pack_kg_per_kwh": 5.5,
+      "typical_cell_wh_per_kg": 200,
+      "typical_cycle_life_to_80pct": 700,
+      "material_intensity_kg_per_kwh": {
+        "Li": 0.11,
+        "Co": 0.85,
+        "Cu": 0.55,
+        "Al": 0.85,
+        "Fe": 0.3,
+        "C": 0.95
+      },
+      "second_life_suitability": 0.4,
+      "notes": "Mostly consumer electronics. Very high cobalt content makes recycling clearly the best pathway."
+    },
+    "LTO": {
+      "label": "Lithium titanate (anode)",
+      "family": "li-ion",
+      "cathode_formula": "LiNi0.5Mn0.3Co0.2O2",
+      "anode": "lithium titanate",
+      "aliases": [
+        "lto",
+        "li4ti5o12",
+        "lithium titanate"
+      ],
+      "typical_pack_kg_per_kwh": 11.0,
+      "typical_cell_wh_per_kg": 90,
+      "typical_cycle_life_to_80pct": 15000,
+      "material_intensity_kg_per_kwh": {
+        "Li": 0.2,
+        "Ni": 0.45,
+        "Co": 0.18,
+        "Mn": 0.27,
+        "Ti": 1.6,
+        "Cu": 0.9,
+        "Al": 1.6,
+        "Fe": 0.7
+      },
+      "second_life_suitability": 0.95,
+      "notes": "Exceptional cycle life (>15,000 cycles) keeps second-life value high long after nominal end of first life."
+    },
+    "NA_ION": {
+      "label": "Sodium-ion",
+      "family": "na-ion",
+      "cathode_formula": null,
+      "anode": "hard carbon",
+      "aliases": [
+        "na-ion",
+        "naion",
+        "sodium ion",
+        "sodium-ion",
+        "sib"
+      ],
+      "typical_pack_kg_per_kwh": 8.5,
+      "typical_cell_wh_per_kg": 140,
+      "typical_cycle_life_to_80pct": 3000,
+      "material_intensity_kg_per_kwh": {
+        "Fe": 0.85,
+        "Mn": 0.55,
+        "Cu": 0.2,
+        "Al": 1.55
+      },
+      "second_life_suitability": 0.85,
+      "notes": "Contains no lithium, nickel or cobalt. Intrinsic material value is very low, so recycling is essentially always a net cost. Aluminium is used for both current collectors."
+    },
+    "NIMH": {
+      "label": "Nickel metal hydride",
+      "family": "nimh",
+      "cathode_formula": null,
+      "anode": "AB5 metal hydride",
+      "aliases": [
+        "nimh",
+        "ni-mh",
+        "nickel metal hydride",
+        "nickel-metal-hydride",
+        "hev battery"
+      ],
+      "typical_pack_kg_per_kwh": 30.0,
+      "typical_cell_wh_per_kg": 60,
+      "typical_cycle_life_to_80pct": 1500,
+      "material_intensity_kg_per_kwh": {
+        "Ni": 10.5,
+        "Co": 1.1,
+        "Fe": 5.0,
+        "Cu": 1.4
+      },
+      "second_life_suitability": 0.35,
+      "notes": "Dominant in hybrids (Prius, Auris, Insight), which makes it the most-traded used pack in the world by unit count. Nickel content alone gives positive recycling economics via stainless-steel smelting. The AB5 anode also carries lanthanum, cerium and neodymium, but no commercial route pays for them, so they are excluded from the payable list rather than counted as value that cannot be realised."
+    },
+    "LEAD_ACID": {
+      "label": "Lead-acid (SLI / stationary)",
+      "family": "lead-acid",
+      "cathode_formula": null,
+      "anode": "lead",
+      "aliases": [
+        "lead acid",
+        "lead-acid",
+        "pb-acid",
+        "pba",
+        "sli",
+        "vrla",
+        "agm",
+        "flooded lead acid"
+      ],
+      "typical_pack_kg_per_kwh": 28.0,
+      "typical_cell_wh_per_kg": 35,
+      "typical_cycle_life_to_80pct": 500,
+      "material_intensity_kg_per_kwh": {
+        "Pb": 18.0,
+        "Cu": 0.3,
+        "Fe": 0.2
+      },
+      "second_life_suitability": 0.15,
+      "notes": "Mature closed-loop recycling with ~99% collection in the EU. Lead content alone usually makes the recycling pathway net positive, and second life is rarely worthwhile."
+    }
+  }
+}

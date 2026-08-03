@@ -1,0 +1,5 @@
+form,price,currency,unit,as_of,source_detail
+lithium_carbonate,12400,USD,t,2026-07-30,Fastmarkets MB-LI-0029 (example - replace with your own export)
+lithium_hydroxide,11250,USD,t,2026-07-30,Fastmarkets MB-LI-0033 (example)
+cobalt_sulphate,8350,USD,t,2026-07-30,Fastmarkets MB-CO-0004 (example)
+nickel_sulphate,4180,USD,t,2026-07-30,Fastmarkets MB-NI-0246 (example)

@@ -1,0 +1,156 @@
+{
+  "schema_version": "1.0",
+  "updated": "2026-08-03",
+  "notes": [
+    "recovery_rate is the share of contained element that physically leaves the process as a saleable product.",
+    "payable_fraction is the share of the recovered element's market value that the refiner actually PAYS the holder. Refiners quote black mass on 'payables': a typical contract pays 60-70% of contained nickel and cobalt value and much less for lithium. Ignoring payables is the single largest source of over-valuation in naive battery residual-value models.",
+    "Effective revenue per kg of contained element = market_price * recovery_rate * payable_fraction.",
+    "EU Regulation 2023/1542 Annex XII sets MINIMUM recovery targets: from 31 Dec 2027 Co/Cu/Pb/Ni 90% and Li 50%; from 31 Dec 2031 Co/Cu/Pb/Ni 95% and Li 80%. Rates below those targets are what plants achieve commercially today; they are floors on regulation, not on physics."
+  ],
+  "sources": [
+    "EU Regulation 2023/1542 Annex XII (recycling efficiency and material recovery targets)",
+    "Fraunhofer ISI, recycling process mass-balance studies",
+    "Circular Energy Storage, black mass payable term benchmarking",
+    "JRC Science for Policy, Li-ion battery recycling technology assessment"
+  ],
+  "processes": {
+    "hydrometallurgical": {
+      "label": "Mechanical pre-treatment to black mass, then hydrometallurgical refining",
+      "applies_to_families": ["li-ion", "na-ion"],
+      "description": "Today's mainstream commercial route in Europe and China. Recovers nickel, cobalt, manganese and (partially) lithium as battery-grade salts.",
+      "elements": {
+        "Ni": { "recovery_rate": 0.95, "payable_fraction": 0.68, "traded_form": "nickel_sulphate" },
+        "Co": { "recovery_rate": 0.95, "payable_fraction": 0.68, "traded_form": "cobalt_sulphate" },
+        "Li": { "recovery_rate": 0.65, "payable_fraction": 0.40, "traded_form": "lithium_carbonate" },
+        "Mn": { "recovery_rate": 0.88, "payable_fraction": 0.35, "traded_form": "manganese_sulphate" },
+        "Cu": { "recovery_rate": 0.92, "payable_fraction": 0.75, "traded_form": "copper_metal" },
+        "Al": { "recovery_rate": 0.80, "payable_fraction": 0.55, "traded_form": "aluminium_metal" },
+        "Fe": { "recovery_rate": 0.85, "payable_fraction": 0.50, "traded_form": "steel_scrap" },
+        "C":  { "recovery_rate": 0.15, "payable_fraction": 0.10, "traded_form": "graphite_flake" },
+        "Pb": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "lead_metal" },
+        "Ti": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "steel_scrap" }
+      },
+      "cost_eur_per_kg": {
+        "discharge_and_dismantle": 0.85,
+        "shredding_to_black_mass": 0.65,
+        "refining_gate_fee": 0.30
+      }
+    },
+    "pyrometallurgical": {
+      "label": "Smelting (pyrometallurgy) with hydrometallurgical refining of the alloy",
+      "applies_to_families": ["li-ion"],
+      "description": "Robust to mixed and damaged feed and needs no discharge, but lithium, aluminium and graphite are lost to slag or burned as reductant.",
+      "elements": {
+        "Ni": { "recovery_rate": 0.95, "payable_fraction": 0.65, "traded_form": "nickel_metal" },
+        "Co": { "recovery_rate": 0.95, "payable_fraction": 0.65, "traded_form": "cobalt_metal" },
+        "Li": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "lithium_carbonate" },
+        "Mn": { "recovery_rate": 0.20, "payable_fraction": 0.20, "traded_form": "manganese_sulphate" },
+        "Cu": { "recovery_rate": 0.95, "payable_fraction": 0.72, "traded_form": "copper_metal" },
+        "Al": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "aluminium_metal" },
+        "Fe": { "recovery_rate": 0.70, "payable_fraction": 0.40, "traded_form": "steel_scrap" },
+        "C":  { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "graphite_flake" },
+        "Pb": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "lead_metal" },
+        "Ti": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "steel_scrap" }
+      },
+      "cost_eur_per_kg": {
+        "discharge_and_dismantle": 0.20,
+        "shredding_to_black_mass": 0.00,
+        "refining_gate_fee": 1.10
+      }
+    },
+    "direct_recycling": {
+      "label": "Direct cathode-to-cathode recycling",
+      "applies_to_families": ["li-ion"],
+      "description": "Emerging route that relithiates and reuses the cathode powder instead of dissolving it. Highest theoretical value retention, but needs single-chemistry, well-sorted feed and is not yet at commercial scale.",
+      "maturity": "pilot",
+      "elements": {
+        "Ni": { "recovery_rate": 0.98, "payable_fraction": 0.75, "traded_form": "nickel_sulphate" },
+        "Co": { "recovery_rate": 0.98, "payable_fraction": 0.75, "traded_form": "cobalt_sulphate" },
+        "Li": { "recovery_rate": 0.90, "payable_fraction": 0.60, "traded_form": "lithium_carbonate" },
+        "Mn": { "recovery_rate": 0.95, "payable_fraction": 0.50, "traded_form": "manganese_sulphate" },
+        "Cu": { "recovery_rate": 0.90, "payable_fraction": 0.72, "traded_form": "copper_metal" },
+        "Al": { "recovery_rate": 0.85, "payable_fraction": 0.55, "traded_form": "aluminium_metal" },
+        "Fe": { "recovery_rate": 0.85, "payable_fraction": 0.50, "traded_form": "steel_scrap" },
+        "C":  { "recovery_rate": 0.60, "payable_fraction": 0.30, "traded_form": "graphite_flake" },
+        "Pb": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "lead_metal" },
+        "Ti": { "recovery_rate": 0.00, "payable_fraction": 0.00, "traded_form": "steel_scrap" }
+      },
+      "cost_eur_per_kg": {
+        "discharge_and_dismantle": 1.10,
+        "shredding_to_black_mass": 0.55,
+        "refining_gate_fee": 0.45
+      }
+    },
+    "nimh_stainless_smelting": {
+      "label": "Stainless-steel smelting of nickel metal hydride packs",
+      "applies_to_families": ["nimh"],
+      "description": "NiMH packs are fed to stainless-steel smelters, where nickel and cobalt report to the alloy. Rare earths in the AB5 anode go to slag and are not paid for.",
+      "elements": {
+        "Ni": { "recovery_rate": 0.90, "payable_fraction": 0.55, "traded_form": "nickel_metal" },
+        "Co": { "recovery_rate": 0.85, "payable_fraction": 0.50, "traded_form": "cobalt_metal" },
+        "Fe": { "recovery_rate": 0.80, "payable_fraction": 0.35, "traded_form": "steel_scrap" },
+        "Cu": { "recovery_rate": 0.85, "payable_fraction": 0.60, "traded_form": "copper_metal" }
+      },
+      "cost_eur_per_kg": {
+        "discharge_and_dismantle": 0.25,
+        "shredding_to_black_mass": 0.10,
+        "refining_gate_fee": 0.20
+      }
+    },
+    "lead_acid_smelting": {
+      "label": "Secondary lead smelting",
+      "applies_to_families": ["lead-acid"],
+      "description": "A mature closed loop. Lead recovery economics are strong enough that scrap lead-acid batteries carry a positive scrap price almost everywhere.",
+      "elements": {
+        "Pb": { "recovery_rate": 0.97, "payable_fraction": 0.70, "traded_form": "lead_metal" },
+        "Cu": { "recovery_rate": 0.60, "payable_fraction": 0.60, "traded_form": "copper_metal" },
+        "Fe": { "recovery_rate": 0.70, "payable_fraction": 0.40, "traded_form": "steel_scrap" }
+      },
+      "cost_eur_per_kg": {
+        "discharge_and_dismantle": 0.05,
+        "shredding_to_black_mass": 0.12,
+        "refining_gate_fee": 0.08
+      }
+    }
+  },
+  "logistics": {
+    "notes": [
+      "End-of-life lithium batteries move as UN3480/UN3481 Class 9 dangerous goods. Damaged or defective packs fall under ADR special provision 376, which forces individually approved packaging and pushes freight cost up several-fold.",
+      "Rates are indicative European road freight including collection, DG packaging and documentation."
+    ],
+    "base_eur_per_kg": 0.55,
+    "condition_multiplier": {
+      "healthy": 1.0,
+      "degraded": 1.0,
+      "defective": 2.6,
+      "damaged": 4.5,
+      "thermal_event": 6.0
+    },
+    "minimum_charge_eur": 120.0
+  },
+  "second_life": {
+    "notes": [
+      "Cost of turning a retired traction pack into a stationary storage product: incoming test, disassembly to module, capacity grading, rebuild, new BMS, enclosure, certification and warranty reserve.",
+      "Grading is the dominant line item and scales with module count rather than energy, which is why small packs repurpose poorly."
+    ],
+    "testing_eur_per_kwh": 8.0,
+    "repackaging_eur_per_kwh": 34.0,
+    "new_bms_eur_per_pack": 420.0,
+    "certification_eur_per_pack": 180.0,
+    "warranty_reserve_fraction": 0.08,
+    "minimum_viable_soh": 0.60,
+    "second_life_end_of_life_soh": 0.50
+  },
+  "reuse": {
+    "notes": [
+      "Direct resale as a replacement traction pack for the same vehicle model. Usually the highest-value pathway when state of health is high and the model still has a vehicle parc, but it needs a clean safety record and a working BMS.",
+      "Value is anchored to the OEM replacement pack price, discounted for age, health and the absence of an OEM warranty."
+    ],
+    "minimum_viable_soh": 0.75,
+    "maximum_age_years": 12.0,
+    "refurbishment_eur_per_kwh": 12.0,
+    "test_and_certify_eur_per_pack": 260.0,
+    "oem_replacement_price_discount": 0.45,
+    "warranty_reserve_fraction": 0.12
+  }
+}

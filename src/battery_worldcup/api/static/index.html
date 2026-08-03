@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battery residual value</title>
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --border: #dfe3e8;
+    --text: #14181d;
+    --muted: #5c6873;
+    --accent: #0b6b4f;
+    --accent-soft: #e6f2ee;
+    --positive: #0b6b4f;
+    --negative: #a32c2c;
+    --warn-bg: #fdf6e3;
+    --warn-border: #e8d8a8;
+    --radius: 10px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14181d; --surface: #1c2128; --border: #303840; --text: #e6edf3;
+      --muted: #9aa7b4; --accent: #4ec99a; --accent-soft: #14322a;
+      --positive: #4ec99a; --negative: #ef7a7a;
+      --warn-bg: #2c2718; --warn-border: #4d442a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 24px 16px 64px; }
+  header { margin-bottom: 24px; }
+  h1 { font-size: 1.5rem; margin: 0 0 4px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); margin: 0; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 16px;
+  }
+  h2 { font-size: 0.82rem; text-transform: uppercase; letter-spacing: 0.07em;
+       color: var(--muted); margin: 0 0 12px; font-weight: 600; }
+  button {
+    font: inherit; font-weight: 550; padding: 9px 15px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  textarea, input[type=text], select {
+    font: inherit; width: 100%; padding: 9px 11px; border-radius: 8px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  textarea { font-family: var(--mono); font-size: 13px; min-height: 96px; resize: vertical; }
+  label { display: block; font-size: 0.82rem; color: var(--muted); margin: 12px 0 5px; }
+  #video { width: 100%; max-height: 320px; border-radius: 8px; background: #000;
+           display: none; object-fit: cover; }
+  #video.live { display: block; }
+
+  .headline { display: flex; flex-wrap: wrap; gap: 20px; align-items: baseline; }
+  .value { font-size: 2.6rem; font-weight: 650; letter-spacing: -0.02em;
+           color: var(--positive); font-variant-numeric: tabular-nums; }
+  .value.neg { color: var(--negative); }
+  .value-meta { color: var(--muted); font-size: 0.9rem; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+  .chip { font-size: 0.78rem; padding: 3px 9px; border-radius: 999px;
+          background: var(--accent-soft); color: var(--accent); font-weight: 550; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.78rem;
+       text-transform: uppercase; letter-spacing: 0.05em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums;
+                   font-family: var(--mono); font-size: 0.85rem; }
+  tr.best td { background: var(--accent-soft); font-weight: 600; }
+  tr.blocked td { color: var(--muted); }
+  .scroll { overflow-x: auto; }
+  details { margin-top: 10px; }
+  summary { cursor: pointer; color: var(--accent); font-size: 0.88rem; font-weight: 550; }
+  .detail { color: var(--muted); font-size: 0.82rem; }
+  .warn { background: var(--warn-bg); border: 1px solid var(--warn-border);
+          border-radius: 8px; padding: 11px 13px; margin-bottom: 8px; font-size: 0.88rem; }
+  .err { border-color: var(--negative); color: var(--negative); }
+  .hidden { display: none; }
+  .spinner { display: inline-block; width: 14px; height: 14px; vertical-align: -2px;
+             border: 2px solid var(--border); border-top-color: var(--accent);
+             border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  footer { color: var(--muted); font-size: 0.8rem; margin-top: 28px; }
+  code { font-family: var(--mono); font-size: 0.85em; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>What is your battery pack worth?</h1>
+  <p class="sub">Scan the passport QR code on the pack. Its health becomes a price,
+     built from current material and system markets.</p>
+</header>
+
+<div class="card">
+  <h2>1 &middot; Scan the passport</h2>
+  <div class="row">
+    <button id="btn-camera" class="primary">Scan with camera</button>
+    <button id="btn-stop" class="hidden">Stop camera</button>
+    <button id="btn-upload">Upload QR image</button>
+    <button id="btn-sample">Use a sample pack</button>
+    <input type="file" id="file-image" accept="image/*" class="hidden">
+  </div>
+  <video id="video" playsinline muted></video>
+  <p id="camera-note" class="detail"></p>
+
+  <label for="payload">Or paste the QR payload, a passport URL, or passport JSON</label>
+  <textarea id="payload" spellcheck="false"
+    placeholder="https://dpp.example.com/battery/AB123&#10;or {&quot;batteryPassport&quot;: {...}}"></textarea>
+
+  <div class="row" style="margin-top: 12px;">
+    <select id="currency" style="width: auto;">
+      <option>EUR</option><option>USD</option><option>GBP</option>
+      <option>CHF</option><option>SEK</option><option>NOK</option><option>PLN</option>
+    </select>
+    <button id="btn-value" class="primary">Value this pack</button>
+    <span id="status" class="detail"></span>
+  </div>
+</div>
+
+<div id="messages"></div>
+<div id="result" class="hidden"></div>
+
+<footer>
+  Residual value is an estimate, not an offer. Every figure carries its source and
+  date &mdash; open the price panel to see them. Market prices move; confirm with a
+  live quote before trading.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const fmtPct = (x) => (x * 100).toFixed(0) + "%";
+
+const SAMPLE = {
+  batteryPassport: {
+    generalInformation: {
+      manufacturerName: "Automotive Energy Supply Corporation",
+      vehicleModel: "Nissan Leaf ZE1 40 kWh",
+      manufacturingDate: "2019-03-14",
+      batteryCategory: "EV battery",
+      batteryMass: { value: 303, unit: "kg" }
+    },
+    performanceAndDurability: {
+      ratedCapacity: { value: 40, unit: "kWh" },
+      nominalVoltage: { value: 350, unit: "V" },
+      stateOfHealth: { value: 81, unit: "%" },
+      numberOfFullCycles: 850,
+      measurementDate: "2026-06-30"
+    },
+    materialComposition: {
+      batteryChemistry: "Li-NMC 532",
+      criticalRawMaterials: [
+        { substance: "Cobalt", massKg: 7.1 },
+        { substance: "Lithium", massKg: 4.0 },
+        { substance: "Nickel", massKg: 17.4 }
+      ]
+    },
+    circularity: { safetyFlags: [] }
+  }
+};
+
+let stream = null;
+let scanning = false;
+
+function message(text, isError) {
+  const div = document.createElement("div");
+  div.className = "warn" + (isError ? " err" : "");
+  div.textContent = text;
+  $("messages").appendChild(div);
+}
+
+function clearMessages() { $("messages").innerHTML = ""; }
+
+function setBusy(busy, text) {
+  $("btn-value").disabled = busy;
+  $("status").innerHTML = busy
+    ? '<span class="spinner"></span> ' + (text || "Valuing…")
+    : (text || "");
+}
+
+// -- camera scanning -------------------------------------------------------
+
+async function startCamera() {
+  if (!("BarcodeDetector" in window)) {
+    $("camera-note").textContent =
+      "This browser has no built-in QR decoder. Upload a photo of the code, " +
+      "or paste the payload below — both work everywhere.";
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+  } catch (err) {
+    $("camera-note").textContent = "Camera unavailable: " + err.message;
+    return;
+  }
+
+  const video = $("video");
+  video.srcObject = stream;
+  video.classList.add("live");
+  await video.play();
+
+  $("btn-camera").classList.add("hidden");
+  $("btn-stop").classList.remove("hidden");
+  $("camera-note").textContent = "Point the camera at the QR code on the pack.";
+
+  const detector = new BarcodeDetector({ formats: ["qr_code"] });
+  scanning = true;
+
+  const tick = async () => {
+    if (!scanning) return;
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length) {
+        $("payload").value = codes[0].rawValue;
+        stopCamera();
+        $("camera-note").textContent = "QR code read.";
+        valuePack();
+        return;
+      }
+    } catch (_) { /* transient decode failures are normal between frames */ }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function stopCamera() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  $("video").classList.remove("live");
+  $("btn-camera").classList.remove("hidden");
+  $("btn-stop").classList.add("hidden");
+}
+
+// -- valuation -------------------------------------------------------------
+
+function buildRequest() {
+  const raw = $("payload").value.trim();
+  if (!raw) throw new Error("Scan a code, or paste a payload or passport JSON.");
+  const body = { currency: $("currency").value };
+  try {
+    body.document = JSON.parse(raw);
+  } catch (_) {
+    body.payload = raw;
+  }
+  return body;
+}
+
+async function valuePack() {
+  clearMessages();
+  let body;
+  try { body = buildRequest(); }
+  catch (err) { message(err.message, true); return; }
+
+  setBusy(true);
+  try {
+    const response = await fetch("/v1/value", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      message(data.detail || ("Request failed: " + response.status), true);
+      $("result").classList.add("hidden");
+      return;
+    }
+    render(data);
+  } catch (err) {
+    message("Could not reach the valuation service: " + err.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+async function valueImage(file) {
+  clearMessages();
+  setBusy(true, "Decoding image…");
+  const form = new FormData();
+  form.append("file", file);
+  try {
+    const response = await fetch(
+      "/v1/value/image?currency=" + encodeURIComponent($("currency").value),
+      { method: "POST", body: form }
+    );
+    const data = await response.json();
+    if (!response.ok) { message(data.detail || "Could not read that image.", true); return; }
+    render(data);
+  } catch (err) {
+    message("Upload failed: " + err.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+// -- rendering -------------------------------------------------------------
+
+function escapeHtml(text) {
+  return String(text).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+function render(data) {
+  const best = data.pathways.find((p) => p.pathway === data.recommended_pathway);
+  const negative = data.residual_value.amount < 0;
+  const battery = data.battery;
+
+  let html = "";
+
+  html += '<div class="card"><h2>Residual value</h2><div class="headline">';
+  html += '<div><div class="value' + (negative ? " neg" : "") + '">'
+        + escapeHtml(data.residual_value.formatted) + "</div>";
+  html += '<div class="value-meta">' + escapeHtml(data.value_per_kwh.formatted)
+        + " per kWh &middot; confidence " + fmtPct(data.confidence) + "</div></div>";
+  if (data.value_range) {
+    html += '<div class="value-meta">Range<br><strong>'
+          + escapeHtml(data.value_range.low.formatted) + " to "
+          + escapeHtml(data.value_range.high.formatted) + "</strong><br>driven by "
+          + escapeHtml(data.value_range.driver) + "</div>";
+  }
+  html += "</div>";
+  html += '<div class="chips"><span class="chip">' + escapeHtml(battery.label) + "</span>";
+  html += '<span class="chip">' + battery.rated_kwh + " kWh</span>";
+  html += '<span class="chip">' + fmtPct(battery.state_of_health) + " health</span>";
+  html += '<span class="chip">' + escapeHtml(data.bill_of_materials.chemistry) + "</span>";
+  html += '<span class="chip">' + data.bill_of_materials.pack_mass_kg + " kg</span>";
+  if (best) html += '<span class="chip">' + escapeHtml(best.label) + "</span>";
+  html += "</div>";
+  if (negative) {
+    html += '<p class="detail" style="margin-top:12px">A negative value means '
+          + "disposal costs more than the pack is worth. That is a normal outcome "
+          + "for chemistries with little nickel or cobalt.</p>";
+  }
+  html += "</div>";
+
+  // Pathways
+  html += '<div class="card"><h2>Every route, compared</h2><div class="scroll"><table>';
+  html += "<tr><th>Route</th><th class='num'>Net value</th><th class='num'>Per kWh</th>"
+        + "<th class='num'>Confidence</th></tr>";
+  for (const p of data.pathways) {
+    const cls = p.pathway === data.recommended_pathway ? "best"
+              : (p.eligible ? "" : "blocked");
+    html += "<tr class='" + cls + "'><td>" + escapeHtml(p.label);
+    if (!p.eligible && p.blockers.length) {
+      html += '<div class="detail">' + escapeHtml(p.blockers[0]) + "</div>";
+    }
+    html += "</td>";
+    html += "<td class='num'>" + (p.eligible ? escapeHtml(p.net_value.formatted) : "&mdash;") + "</td>";
+    html += "<td class='num'>" + (p.eligible ? escapeHtml(p.value_per_kwh.formatted) : "&mdash;") + "</td>";
+    html += "<td class='num'>" + (p.eligible ? fmtPct(p.confidence) : "&mdash;") + "</td></tr>";
+  }
+  html += "</table></div></div>";
+
+  // Breakdown of the best route
+  if (best) {
+    html += '<div class="card"><h2>How ' + escapeHtml(best.label.toLowerCase())
+          + " adds up</h2><div class='scroll'><table>";
+    for (const line of best.lines) {
+      const sign = line.kind === "revenue" ? "+" : "&minus;";
+      html += "<tr><td>" + sign + " " + escapeHtml(line.label);
+      if (line.detail) html += '<div class="detail">' + escapeHtml(line.detail) + "</div>";
+      html += "</td><td class='num'>" + escapeHtml(line.amount.formatted) + "</td></tr>";
+    }
+    html += "<tr class='best'><td><strong>Net</strong></td><td class='num'><strong>"
+          + escapeHtml(best.net_value.formatted) + "</strong></td></tr>";
+    html += "</table></div>";
+    if (best.assumptions.length) {
+      html += "<details><summary>Assumptions behind this route</summary><ul>";
+      for (const a of best.assumptions) html += "<li>" + escapeHtml(a) + "</li>";
+      html += "</ul></details>";
+    }
+    html += "</div>";
+  }
+
+  // Materials
+  html += '<div class="card"><h2>What is inside the pack</h2><div class="scroll"><table>';
+  html += "<tr><th>Element</th><th class='num'>kg</th><th>Source</th></tr>";
+  for (const line of data.bill_of_materials.lines) {
+    html += "<tr><td>" + escapeHtml(line.element) + "</td><td class='num'>"
+          + line.mass_kg.toFixed(2) + "</td><td class='detail'>"
+          + escapeHtml(line.basis) + "</td></tr>";
+  }
+  html += "<tr><td>inert</td><td class='num'>"
+        + data.bill_of_materials.inert_mass_kg.toFixed(2)
+        + "</td><td class='detail'>separator, binder, electrolyte, plastics</td></tr>";
+  html += "</table></div></div>";
+
+  // Prices
+  html += '<div class="card"><h2>Market prices used (confidence '
+        + fmtPct(data.prices.confidence) + ")</h2>";
+  html += "<details open><summary>"
+        + data.prices.quotes.length + " quotes, oldest "
+        + escapeHtml(data.prices.oldest_as_of || "n/a")
+        + "</summary><div class='scroll'><table>";
+  html += "<tr><th>Material</th><th class='num'>Price</th>"
+        + "<th class='num'>Per kg contained</th><th>Source</th></tr>";
+  for (const q of data.prices.quotes) {
+    html += "<tr><td>" + escapeHtml(q.form) + "</td>";
+    html += "<td class='num'>" + q.price.toLocaleString(undefined, {maximumFractionDigits: 2})
+          + " " + escapeHtml(q.currency) + "/" + escapeHtml(q.unit) + "</td>";
+    html += "<td class='num'>" + q.price_per_kg_contained.toFixed(2) + "</td>";
+    html += "<td class='detail'>" + escapeHtml(q.source) + " &middot; "
+          + escapeHtml(q.quality) + " &middot; " + escapeHtml(q.as_of) + "</td></tr>";
+  }
+  html += "</table></div></details></div>";
+
+  // Warnings
+  if (data.warnings.length) {
+    html += '<div class="card"><h2>Read this before trusting the number</h2>';
+    for (const w of data.warnings) html += '<div class="warn">' + escapeHtml(w) + "</div>";
+    html += "</div>";
+  }
+
+  const result = $("result");
+  result.innerHTML = html;
+  result.classList.remove("hidden");
+  result.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// -- wiring ----------------------------------------------------------------
+
+$("btn-camera").addEventListener("click", startCamera);
+$("btn-stop").addEventListener("click", stopCamera);
+$("btn-value").addEventListener("click", valuePack);
+$("btn-upload").addEventListener("click", () => $("file-image").click());
+$("file-image").addEventListener("change", (e) => {
+  if (e.target.files.length) valueImage(e.target.files[0]);
+});
+$("btn-sample").addEventListener("click", () => {
+  $("payload").value = JSON.stringify(SAMPLE, null, 2);
+  valuePack();
+});
+$("payload").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) valuePack();
+});
+
+if (!("BarcodeDetector" in window)) {
+  $("camera-note").textContent =
+    "Live camera scanning needs a browser with the BarcodeDetector API "
+    + "(Chrome, Edge, Android). Uploading a photo works everywhere.";
+}
+</script>
+</body>
+</html>

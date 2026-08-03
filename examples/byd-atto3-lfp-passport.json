@@ -1,0 +1,22 @@
+{
+  "batteryPassport": {
+    "generalInformation": {
+      "batteryPassportId": "urn:uuid:9c22a1f0-77b3-4b0e-a2c1-5d9e0f3b7a44",
+      "manufacturerName": "BYD",
+      "batteryModel": "Blade CTP",
+      "vehicleModel": "BYD Atto 3",
+      "manufacturingDate": "2022-09-02",
+      "batteryCategory": "EV battery",
+      "batteryMass": { "value": 440, "unit": "kg" }
+    },
+    "performanceAndDurability": {
+      "ratedCapacity": { "value": 60.5, "unit": "kWh" },
+      "nominalVoltage": { "value": 450, "unit": "V" },
+      "stateOfHealth": { "value": 91, "unit": "%" },
+      "numberOfFullCycles": 620,
+      "measurementDate": "2026-07-15"
+    },
+    "materialComposition": { "batteryChemistry": "LiFePO4" },
+    "circularity": { "safetyFlags": [] }
+  }
+}

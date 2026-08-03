@@ -1,0 +1,30 @@
+{
+  "batteryPassport": {
+    "generalInformation": {
+      "manufacturerName": "Contemporary Amperex Technology",
+      "batteryModel": "CTP 2.0",
+      "manufacturingDate": "2021-11-20",
+      "batteryCategory": "EV battery",
+      "batteryMass": { "value": 480, "unit": "kg" }
+    },
+    "performanceAndDurability": {
+      "ratedCapacity": { "value": 75, "unit": "kWh" },
+      "stateOfHealth": { "value": 64, "unit": "%" },
+      "numberOfFullCycles": 1900,
+      "cellImbalance": { "value": 210, "unit": "mV" },
+      "measurementDate": "2026-07-02"
+    },
+    "materialComposition": {
+      "batteryChemistry": "NMC811",
+      "criticalRawMaterials": [
+        { "substance": "Cobalt", "massKg": 6.9 },
+        { "substance": "Lithium", "massKg": 7.4 },
+        { "substance": "Nickel", "massKg": 55.2 }
+      ]
+    },
+    "circularity": {
+      "packCondition": "damaged",
+      "safetyFlags": ["enclosure deformation after side impact"]
+    }
+  }
+}
