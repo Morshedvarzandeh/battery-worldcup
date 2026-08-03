@@ -78,6 +78,11 @@
     .row > select { flex: 1 1 100%; width: 100%; }
   }
 
+  input[type=text] {
+    font: inherit; font-family: var(--mono); width: 100%; padding: 12px;
+    border-radius: 9px; border: 1px solid var(--border);
+    background: var(--bg); color: var(--text); text-transform: uppercase;
+  }
   textarea, select {
     font: inherit; width: 100%; padding: 10px 12px; border-radius: 9px;
     border: 1px solid var(--border); background: var(--bg); color: var(--text);
@@ -136,6 +141,13 @@
   .best-flag {
     display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
     text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
+  }
+
+  .reference {
+    font-family: var(--mono); font-size: 1.35rem; font-weight: 600;
+    letter-spacing: 0.06em; color: var(--accent); background: var(--accent-soft);
+    border-radius: 9px; padding: 12px 16px; text-align: center;
+    user-select: all; margin-bottom: 4px;
   }
 
   ul.plain { margin: 0; padding-left: 20px; }
@@ -207,7 +219,17 @@
   <p id="camera-note" class="detail"></p>
 
   <details style="margin-top:16px">
-    <summary class="detail" style="cursor:pointer">Type it in instead</summary>
+    <summary class="detail" style="cursor:pointer">I have a reference from before</summary>
+    <label for="reference">Reference, e.g. BV-7K2P-M4X9</label>
+    <div class="row">
+      <input type="text" id="reference" placeholder="BV-____-____"
+             autocapitalize="characters" autocomplete="off" spellcheck="false">
+      <button id="btn-lookup">Look it up</button>
+    </div>
+  </details>
+
+  <details style="margin-top:10px">
+    <summary class="detail" style="cursor:pointer">Type the code in instead</summary>
     <label for="payload">Paste the code's text, a link, or the passport file</label>
     <textarea id="payload" spellcheck="false"
       placeholder="https://dpp.example.com/battery/AB123"></textarea>
@@ -267,7 +289,8 @@ const SAMPLE = {
 
 let stream = null;
 let scanning = false;
-let lastRequest = null;   // reused when building a shareable report
+let lastRequest = null;    // reused when building a shareable report
+let lastReference = null;  // set once a valuation is on record
 
 function esc(text) {
   return String(text).replace(/[&<>"']/g, (c) => (
@@ -377,6 +400,7 @@ async function valuePack() {
       return;
     }
     lastRequest = body;
+    lastReference = data.reference || null;
     render(data);
   } catch (err) {
     message("Could not reach the service: " + err.message, true);
@@ -428,6 +452,30 @@ async function valueImage(file) {
   }
 }
 
+async function lookupReference() {
+  clearMessages();
+  const reference = $("reference").value.trim();
+  if (!reference) { message("Enter the reference from your earlier report.", true); return; }
+
+  setBusy(true, "Finding it…");
+  try {
+    const response = await fetch("/v1/valuations/" + encodeURIComponent(reference));
+    const data = await response.json();
+    if (!response.ok) {
+      message(data.detail || "We could not find that reference.", true);
+      return;
+    }
+    // A stored result is served as produced, so nothing is re-priced.
+    lastRequest = null;
+    lastReference = data.reference;
+    render(data);
+  } catch (err) {
+    message("Could not reach the service: " + err.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
+
 // -- saving and sharing ----------------------------------------------------
 
 function filenameFrom(response, fallback) {
@@ -437,14 +485,18 @@ function filenameFrom(response, fallback) {
 }
 
 async function fetchReport() {
-  if (!lastRequest) {
+  if (!lastReference && !lastRequest) {
     throw new Error("Scan the code again to build a report.");
   }
-  const response = await fetch("/v1/report", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(lastRequest)
-  });
+  // A stored valuation is rebuilt from the record, so the report matches what
+  // was originally quoted rather than today's prices.
+  const response = lastReference
+    ? await fetch("/v1/valuations/" + encodeURIComponent(lastReference) + "/report")
+    : await fetch("/v1/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lastRequest)
+      });
   if (!response.ok) throw new Error("The report could not be created.");
   const blob = await response.blob();
   return { blob, name: filenameFrom(response, "battery-value-report.html") };
@@ -526,15 +578,25 @@ function renderAnswer(data) {
   return html;
 }
 
-function renderActions() {
-  return '<div class="card"><h2>Keep a copy</h2>'
-    + '<p class="option-why" style="margin:0 0 14px">A single file with the full '
-    + "workings, ready to send to a garage, buyer or recycler. It opens in any "
-    + 'browser and prints to PDF.</p>'
+function renderActions(data) {
+  let html = '<div class="card"><h2>Keep a copy</h2>';
+
+  if (data.reference) {
+    html += '<p class="option-why" style="margin:0 0 6px">Your reference</p>'
+      + '<div class="reference">' + esc(data.reference) + "</div>"
+      + '<p class="option-why">Keep this. Quote it any time and we will send '
+      + "this exact valuation again &mdash; the same prices, the same number. "
+      + "We do not have to work it out from scratch.</p>";
+  }
+
+  html += '<p class="option-why" style="margin-top:14px">The report is a single '
+    + "file with the full workings, ready to send to a garage, buyer or "
+    + 'recycler. It opens in any browser and prints to PDF.</p>'
     + '<div class="row">'
     + '<button id="btn-share" class="primary">Share the report</button>'
     + '<button id="btn-save">Save it</button>'
     + "</div></div>";
+  return html;
 }
 
 function renderOptions(data) {
@@ -665,7 +727,7 @@ function render(data) {
   result.innerHTML = renderAnswer(data)
                    + renderOptions(data)
                    + renderWhy(data)
-                   + renderActions()
+                   + renderActions(data)
                    + renderTechnical(data);
   result.classList.remove("hidden");
 
@@ -682,6 +744,10 @@ $("btn-photo").addEventListener("click", () => $("file-image").click());
 $("btn-camera").addEventListener("click", startCamera);
 $("btn-stop").addEventListener("click", stopCamera);
 $("btn-value").addEventListener("click", valuePack);
+$("btn-lookup").addEventListener("click", lookupReference);
+$("reference").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") lookupReference();
+});
 $("file-image").addEventListener("change", (e) => {
   if (e.target.files.length) valueImage(e.target.files[0]);
 });

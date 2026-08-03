@@ -29,6 +29,23 @@ def isolated_cache(tmp_path, monkeypatch):
     return PriceCache(cache_dir)
 
 
+@pytest.fixture(autouse=True)
+def isolated_store(tmp_path, monkeypatch):
+    """Point the record store at a per-test database.
+
+    Without this a test run would write into whoever's real store, and tests
+    would see each other's records.
+    """
+    from battery_value import store as store_module
+
+    monkeypatch.setenv("BV_STORE_PATH", str(tmp_path / "valuations.sqlite3"))
+    monkeypatch.delenv("BV_STORE_ENABLED", raising=False)
+    monkeypatch.delenv("BV_STORE_RETENTION_DAYS", raising=False)
+    store_module.reset_default_store()
+    yield store_module.default_store()
+    store_module.reset_default_store()
+
+
 @pytest.fixture
 def offline_resolver(isolated_cache):
     """A price resolver that only uses the bundled snapshot."""

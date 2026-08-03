@@ -23,6 +23,7 @@ from ..passport.scan import decoder_available
 from ..passport.resolver import PassportResolver
 from ..report import build_html_report, report_filename
 from ..serialisation import passport_to_dict, valuation_to_dict
+from ..store import ValuationStore, default_store, normalise_reference
 from ..valuation.config import ValuationConfig
 from ..valuation.engine import ValuationEngine
 from ..valuation.models import ResidualValuation
@@ -116,7 +117,11 @@ def scan(request: ScanRequest) -> dict[str, Any]:
 
 def _value_passport(request: ValueRequest) -> ResidualValuation:
     """Resolve and value a passport, mapping engine errors to HTTP errors."""
-    passport = _resolve_passport(request)
+    return _value_resolved(_resolve_passport(request), request)
+
+
+def _value_resolved(passport: BatteryPassport, request: ValueRequest) -> ResidualValuation:
+    """Value an already-resolved passport."""
     currency = request.currency.upper()
 
     if request.manual_prices:
@@ -142,10 +147,110 @@ def _value_passport(request: ValueRequest) -> ResidualValuation:
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
+def _store() -> ValuationStore:
+    """The record store. Indirection so tests can point it elsewhere."""
+    return default_store()
+
+
 @app.post("/v1/value")
 def value(request: ValueRequest) -> dict[str, Any]:
-    """Scan a passport and return its residual value by every pathway."""
-    return valuation_to_dict(_value_passport(request))
+    """Scan a passport and return its residual value by every pathway.
+
+    The result is kept on record and the response carries a ``reference``.
+    Quoting that reference later returns this exact answer -- prices and all --
+    rather than a fresh valuation at today's market.
+    """
+    passport = _resolve_passport(request)
+    payload = valuation_to_dict(_value_resolved(passport, request))
+    _store().save(payload, passport=passport)
+    return payload
+
+
+@app.get("/v1/valuations/{reference}")
+def stored_valuation(reference: str) -> dict[str, Any]:
+    """Return a valuation exactly as it was produced.
+
+    No recomputation: the metal prices, the pack data and the number are the
+    ones the customer was originally given.
+    """
+    record = _store().get(reference)
+    if record is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(
+                f"No valuation found for reference {normalise_reference(reference)}. "
+                "Check the reference, or scan the battery again."
+            ),
+        )
+    return record.payload
+
+
+@app.get("/v1/valuations/{reference}/report", response_class=HTMLResponse)
+def stored_report(
+    reference: str, technical: bool = Query(default=True)
+) -> HTMLResponse:
+    """Rebuild the report for a stored valuation."""
+    record = _store().get(reference)
+    if record is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No valuation found for reference {normalise_reference(reference)}.",
+        )
+    document = build_html_report(record.payload, include_technical=technical)
+    return HTMLResponse(
+        document,
+        headers={
+            "Content-Disposition": (
+                f'attachment; filename="{report_filename(record.payload)}"'
+            )
+        },
+    )
+
+
+@app.get("/v1/valuations")
+def list_valuations(
+    battery: str | None = Query(
+        default=None,
+        description="Serial number or battery id, to see one pack's history.",
+    ),
+    limit: int = Query(default=20, ge=1, le=200),
+) -> dict[str, Any]:
+    """Recent valuations, or the history of one battery."""
+    store = _store()
+    records = (
+        store.find_by_battery(battery, limit=limit)
+        if battery
+        else store.recent(limit=limit)
+    )
+    return {
+        "count": len(records),
+        "valuations": [
+            {
+                "reference": record.reference,
+                "created_at": record.created_at.isoformat(),
+                "battery_label": record.battery_label,
+                "serial_number": record.serial_number,
+                "residual_value": record.residual_value,
+                "currency": record.currency,
+                "recommended_pathway": record.recommended_pathway,
+                "confidence": record.confidence,
+                "age_days": record.age_days,
+            }
+            for record in records
+        ],
+    }
+
+
+@app.delete("/v1/valuations/{reference}")
+def delete_valuation(reference: str) -> dict[str, Any]:
+    """Erase a stored valuation, for a customer asking to be forgotten."""
+    deleted = _store().delete(reference)
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"No valuation found for reference {normalise_reference(reference)}.",
+        )
+    return {"deleted": normalise_reference(reference)}
 
 
 @app.post("/v1/report", response_class=HTMLResponse)
@@ -156,13 +261,15 @@ def report(request: ValueRequest, technical: bool = Query(default=True)) -> HTML
     so it opens anywhere, prints to PDF from any browser, and survives being
     attached to a message.
     """
-    valuation = _value_passport(request)
-    document = build_html_report(valuation, include_technical=technical)
+    passport = _resolve_passport(request)
+    payload = valuation_to_dict(_value_resolved(passport, request))
+    _store().save(payload, passport=passport)
+    document = build_html_report(payload, include_technical=technical)
     return HTMLResponse(
         document,
         headers={
             "Content-Disposition": (
-                f'attachment; filename="{report_filename(valuation)}"'
+                f'attachment; filename="{report_filename(payload)}"'
             )
         },
     )

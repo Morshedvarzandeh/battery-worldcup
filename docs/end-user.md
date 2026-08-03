@@ -105,6 +105,64 @@ name = report_filename(valuation)   # battery-value-nissan-leaf-ze1-40-kwh-2026-
 Passport fields are untrusted input and are HTML-escaped before they reach the
 report, so a manufacturer name containing markup cannot become markup.
 
+## The record
+
+Every valuation is kept, and the response carries a short reference the owner
+can read aloud:
+
+```
+BV-7K2P-M4X9
+```
+
+Quoting it later returns **that valuation**, not a fresh one. This matters more
+than it first appears: metal prices move weekly, so re-scanning next month
+gives a different number — which is precisely the wrong answer when someone
+rings up about the figure they were quoted. Retrieval never recomputes, so the
+prices, the pack data and the number are the ones they were originally given.
+
+```bash
+bv history                      # what is on record
+bv history --battery PACK-0042  # one pack's valuations over time
+bv show BV-7K2P-M4X9            # reprint it
+bv show BV-7K2P-M4X9 --report ./  # rebuild the report from the record
+bv forget BV-7K2P-M4X9          # erase it
+```
+
+```
+GET    /v1/valuations/{reference}          the answer, as produced
+GET    /v1/valuations/{reference}/report   the report, rebuilt from the record
+GET    /v1/valuations?battery=PACK-0042    one pack's history
+DELETE /v1/valuations/{reference}          erase it
+```
+
+References use a Crockford-style alphabet with no `0`/`O` or `1`/`I`, and
+lookup accepts them however they get typed back in — `bv7k2pm4x9`,
+`BV 7K2P M4X9` and `bv-7k2p-m4x9` all resolve. A malformed reference misses
+rather than resolving to somebody else's record.
+
+Because each valuation is a point in time, re-scanning the same pack adds to
+its history rather than replacing it. `bv history --battery <serial>` shows how
+a pack's value has moved.
+
+### Storage, retention and privacy
+
+Records live in one SQLite file — no service to run, no dependency to install:
+
+```bash
+export BV_STORE_PATH=/var/lib/battery-value/valuations.sqlite3
+export BV_STORE_RETENTION_DAYS=365      # default
+export BV_STORE_ENABLED=0               # keep nothing at all
+```
+
+Records contain battery and vehicle identifiers, so treat the file as personal
+data. `bv prune` enforces retention (run it from cron), `bv forget <ref>` and
+`DELETE /v1/valuations/{ref}` handle an erasure request, and `--no-store` skips
+recording a single valuation.
+
+A failed write is logged and swallowed. Losing a record must never cost the
+customer their answer, so the valuation is returned either way — just without a
+reference.
+
 ## Who the report is for
 
 The owner rarely reads it. They forward it. The audience is the garage quoting

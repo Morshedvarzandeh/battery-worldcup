@@ -8,6 +8,11 @@ both: the plain-language answer at the top, and the full audit trail beneath.
 The output is a single HTML file with no external references, which means it
 opens anywhere, prints to PDF from any browser, and can be attached to a
 message without anything breaking.
+
+The renderer works from the *serialised* valuation -- the same payload the API
+returns -- rather than from a live object. That means a report rebuilt months
+later from a stored record is byte-for-byte what the owner was originally
+shown, and nothing can appear in the report that is not also in the API.
 """
 
 from __future__ import annotations
@@ -15,8 +20,10 @@ from __future__ import annotations
 import html
 from datetime import datetime, timezone
 
-from .valuation import plain
-from .valuation.models import LineKind, ResidualValuation
+from typing import Any
+
+from .serialisation import valuation_to_dict
+from .valuation.models import ResidualValuation
 
 _STYLE = """
   * { box-sizing: border-box; }
@@ -66,108 +73,124 @@ _STYLE = """
 
 
 def _e(value: object) -> str:
-    """HTML-escape a value."""
+    """HTML-escape a value. Everything reaching the document goes through this."""
     return html.escape(str(value), quote=True)
 
 
-def _rows(pairs: list[tuple[str, str]]) -> str:
-    return "".join(
-        f"<tr><td>{_e(left)}</td><td class='num'>{_e(right)}</td></tr>"
-        for left, right in pairs
-    )
+def _money(value: dict[str, Any] | None) -> str:
+    """Read a serialised Money's display string."""
+    return (value or {}).get("formatted", "")
 
 
 def build_html_report(
-    valuation: ResidualValuation, *, include_technical: bool = True
+    valuation: ResidualValuation | dict[str, Any],
+    *,
+    include_technical: bool = True,
 ) -> str:
     """Render a valuation as a standalone HTML document.
 
     Args:
-        valuation: The result to render.
+        valuation: A live result, or the serialised payload of a stored one.
         include_technical: Keep the full audit trail. Turn it off for a
             summary a non-specialist can read at a glance.
     """
-    block = plain.confidence_band(valuation.confidence)
-    best = valuation.recommended
-    value = valuation.residual_value
-    is_cost = value.is_negative
-    generated = valuation.generated_at or datetime.now(timezone.utc)
+    payload = (
+        valuation
+        if isinstance(valuation, dict)
+        else valuation_to_dict(valuation)
+    )
+
+    plain = payload.get("plain", {})
+    battery = payload.get("battery", {})
+    bom = payload.get("bill_of_materials", {})
+    residual = payload.get("residual_value", {})
+    is_cost = float(residual.get("amount", 0.0)) < 0
+    generated = _generated_on(payload)
 
     parts: list[str] = [
         "<!doctype html>",
         '<html lang="en"><head><meta charset="utf-8">',
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
-        f"<title>Battery value report - {_e(valuation.battery_label)}</title>",
+        f"<title>Battery value report - {_e(battery.get('label', 'battery'))}</title>",
         f"<style>{_STYLE}</style></head><body>",
-        f"<h1>{_e(valuation.battery_label)}</h1>",
-        f'<p class="meta">Battery value report &middot; '
-        f'{_e(generated.strftime("%d %B %Y"))}</p>',
+        f"<h1>{_e(battery.get('label', 'Battery'))}</h1>",
+        f'<p class="meta">Battery value report &middot; {_e(generated)}'
+        + (
+            f" &middot; reference {_e(payload['reference'])}"
+            if payload.get("reference")
+            else ""
+        )
+        + "</p>",
     ]
 
     # --- the answer -------------------------------------------------------
-    shown = value.format(0).replace("-", "") if is_cost else value.format(0)
+    shown = _money(residual).replace("-", "") if is_cost else _money(residual)
     parts.append(f'<div class="headline{" cost" if is_cost else ""}">')
     parts.append(f'<div class="amount{" cost" if is_cost else ""}">{_e(shown)}</div>')
-    parts.append(f'<p class="said">{_e(plain.headline_sentence(valuation))}</p>')
+    parts.append(f'<p class="said">{_e(plain.get("headline", ""))}</p>')
 
-    if valuation.value_range and not is_cost:
+    value_range = payload.get("value_range")
+    if value_range and not is_cost:
         parts.append(
-            f'<p class="band">Most likely between '
-            f"{_e(valuation.value_range.low.format(0))} and "
-            f"{_e(valuation.value_range.high.format(0))}.</p>"
+            '<p class="band">Most likely between '
+            f"{_e(_money(value_range.get('low')))} and "
+            f"{_e(_money(value_range.get('high')))}.</p>"
         )
+
+    confidence = plain.get("confidence", {})
     parts.append(
-        f'<p class="band"><strong>{_e(block.label)}.</strong> '
-        f"{_e(block.explanation)}</p>"
+        f'<p class="band"><strong>{_e(confidence.get("label", ""))}.</strong> '
+        f"{_e(confidence.get('explanation', ''))}</p>"
     )
     parts.append(
         '<p class="facts">'
-        f"{valuation.rated_kwh:g} kWh &middot; "
-        f"{valuation.state_of_health:.0%} health &middot; "
-        f"{_e(plain.chemistry_in_plain_words(valuation.bom.chemistry))} &middot; "
-        f"{valuation.bom.pack_mass_kg:.0f} kg</p>"
+        f"{_e(battery.get('rated_kwh', ''))} kWh &middot; "
+        f"{float(battery.get('state_of_health', 0)) * 100:.0f}% health &middot; "
+        f"{_e(plain.get('chemistry', ''))} &middot; "
+        f"{_e(bom.get('pack_mass_kg', ''))} kg</p>"
     )
     parts.append("</div>")
 
     # --- why --------------------------------------------------------------
-    parts.append("<h2>Why this number</h2><ul>")
-    parts.extend(f"<li>{_e(reason)}</li>" for reason in plain.why_this_value(valuation))
-    parts.append("</ul>")
+    if plain.get("why"):
+        parts.append("<h2>Why this number</h2><ul>")
+        parts.extend(f"<li>{_e(reason)}</li>" for reason in plain["why"])
+        parts.append("</ul>")
 
     # --- options ----------------------------------------------------------
     parts.append("<h2>Every option</h2><table>")
-    parts.append(
-        "<tr><th>What you could do</th><th class='num'>Worth</th></tr>"
-    )
+    parts.append("<tr><th>What you could do</th><th class='num'>Worth</th></tr>")
+    recommended = payload.get("recommended_pathway")
     ordered = sorted(
-        valuation.pathways,
-        key=lambda p: (not p.eligible, -p.net_value.amount),
+        payload.get("pathways", []),
+        key=lambda p: (not p.get("eligible"), -float(p["net_value"]["amount"])),
     )
     for option in ordered:
-        classes = "" if option.eligible else " class='out'"
-        amount = option.net_value.format(0) if option.eligible else "not possible"
+        eligible = option.get("eligible")
+        classes = "" if eligible else " class='out'"
+        amount = _money(option.get("net_value")) if eligible else "not possible"
         reason = (
-            option.pathway.plain_explanation
-            if option.eligible
-            else (option.blockers[0] if option.blockers else "")
+            option.get("explanation", "")
+            if eligible
+            else (option.get("blockers") or [""])[0]
         )
-        marker = " <strong>(best)</strong>" if option is best else ""
+        marker = (
+            " <strong>(best)</strong>" if option.get("pathway") == recommended else ""
+        )
         parts.append(
-            f"<tr{classes}><td>{_e(option.pathway.friendly_label)}{marker}"
+            f"<tr{classes}><td>{_e(option.get('friendly_label', ''))}{marker}"
             f"<div class='detail'>{_e(reason)}</div></td>"
             f"<td class='num'>{_e(amount)}</td></tr>"
         )
     parts.append("</table>")
 
-    improvements = plain.how_to_improve(valuation)
-    if improvements:
+    if plain.get("how_to_improve"):
         parts.append("<h2>For a sharper estimate</h2><ul>")
-        parts.extend(f"<li>{_e(tip)}</li>" for tip in improvements)
+        parts.extend(f"<li>{_e(tip)}</li>" for tip in plain["how_to_improve"])
         parts.append("</ul>")
 
-    # --- technical --------------------------------------------------------
     if include_technical:
-        parts.append(_technical_section(valuation))
+        parts.append(_technical_section(payload))
 
     parts.append(
         "<footer>This is an estimate produced from the battery's own passport "
@@ -178,88 +201,119 @@ def build_html_report(
     return "\n".join(parts)
 
 
-def _technical_section(valuation: ResidualValuation) -> str:
+def _technical_section(payload: dict[str, Any]) -> str:
     """The audit trail: workings, materials, prices and caveats."""
     parts: list[str] = []
-    best = valuation.recommended
+    recommended = payload.get("recommended_pathway")
+    best = next(
+        (p for p in payload.get("pathways", []) if p.get("pathway") == recommended),
+        None,
+    )
 
     if best is not None:
-        parts.append(f"<h2>How {_e(best.label.lower())} adds up</h2><table>")
-        for line in best.lines:
-            sign = "+" if line.kind is LineKind.REVENUE else "&minus;"
+        parts.append(f"<h2>How {_e(best.get('label', '').lower())} adds up</h2><table>")
+        for line in best.get("lines", []):
+            sign = "+" if line.get("kind") == "revenue" else "&minus;"
             detail = (
-                f"<div class='detail'>{_e(line.detail)}</div>" if line.detail else ""
+                f"<div class='detail'>{_e(line['detail'])}</div>"
+                if line.get("detail")
+                else ""
             )
             parts.append(
-                f"<tr><td>{sign} {_e(line.label)}{detail}</td>"
-                f"<td class='num'>{_e(line.amount.format(0))}</td></tr>"
+                f"<tr><td>{sign} {_e(line.get('label', ''))}{detail}</td>"
+                f"<td class='num'>{_e(_money(line.get('amount')))}</td></tr>"
             )
         parts.append(
-            f"<tr class='total'><td>Net</td>"
-            f"<td class='num'>{_e(best.net_value.format(0))}</td></tr></table>"
+            "<tr class='total'><td>Net</td>"
+            f"<td class='num'>{_e(_money(best.get('net_value')))}</td></tr></table>"
         )
-        if best.assumptions:
+        if best.get("assumptions"):
             parts.append("<h2>Assumptions</h2><ul class='detail'>")
-            parts.extend(f"<li>{_e(a)}</li>" for a in best.assumptions)
+            parts.extend(f"<li>{_e(a)}</li>" for a in best["assumptions"])
             parts.append("</ul>")
 
+    bom = payload.get("bill_of_materials", {})
     parts.append("<h2>Materials in the pack</h2><table>")
     parts.append(
         "<tr><th>Element</th><th class='num'>kg</th><th>Where this came from</th></tr>"
     )
-    for line in valuation.bom.sorted_lines():
+    for line in bom.get("lines", []):
         parts.append(
-            f"<tr><td>{_e(line.element)}</td>"
-            f"<td class='num'>{line.mass_kg:.2f}</td>"
-            f"<td class='detail'>{_e(line.basis)}</td></tr>"
+            f"<tr><td>{_e(line.get('element', ''))}</td>"
+            f"<td class='num'>{float(line.get('mass_kg', 0)):.2f}</td>"
+            f"<td class='detail'>{_e(line.get('basis', ''))}</td></tr>"
         )
     parts.append(
-        f"<tr><td>inert</td><td class='num'>{valuation.bom.inert_mass_kg:.2f}</td>"
+        f"<tr><td>inert</td><td class='num'>{float(bom.get('inert_mass_kg', 0)):.2f}</td>"
         "<td class='detail'>separator, binder, electrolyte, plastics</td></tr></table>"
     )
 
+    prices = payload.get("prices", {})
     parts.append("<h2>Market prices used</h2><table>")
     parts.append(
         "<tr><th>Material</th><th class='num'>Price</th>"
         "<th class='num'>Per kg of metal</th><th>Source</th></tr>"
     )
-    for form, quote in valuation.prices.quotes.items():
+    for quote in prices.get("quotes", []):
         parts.append(
-            f"<tr><td>{_e(form)}</td>"
-            f"<td class='num'>{quote.price:,.2f} {_e(quote.currency)}"
-            f"/{_e(quote.unit.value)}</td>"
-            f"<td class='num'>{quote.price_per_kg_contained():,.2f}</td>"
-            f"<td class='detail'>{_e(quote.source)} &middot; {_e(quote.quality.value)}"
-            f" &middot; {_e(quote.as_of.isoformat())}</td></tr>"
+            f"<tr><td>{_e(quote.get('form', ''))}</td>"
+            f"<td class='num'>{float(quote.get('price', 0)):,.2f} "
+            f"{_e(quote.get('currency', ''))}/{_e(quote.get('unit', ''))}</td>"
+            f"<td class='num'>{float(quote.get('price_per_kg_contained', 0)):,.2f}</td>"
+            f"<td class='detail'>{_e(quote.get('source', ''))} &middot; "
+            f"{_e(quote.get('quality', ''))} &middot; {_e(quote.get('as_of', ''))}</td></tr>"
         )
     parts.append("</table>")
 
-    if valuation.sensitivity:
+    if payload.get("sensitivity"):
         parts.append("<h2>What moves the number</h2><table>")
-        parts.append(
-            _rows(
-                [
-                    (factor.name, f"{factor.low.format(0)} to {factor.high.format(0)}")
-                    for factor in valuation.sensitivity
-                ]
+        for factor in payload["sensitivity"]:
+            parts.append(
+                f"<tr><td>{_e(factor.get('name', ''))}</td>"
+                f"<td class='num'>{_e(_money(factor.get('low')))} to "
+                f"{_e(_money(factor.get('high')))}</td></tr>"
             )
-        )
         parts.append("</table>")
 
-    if valuation.warnings:
+    if payload.get("warnings"):
         parts.append("<h2>Caveats</h2>")
-        parts.extend(f'<div class="note">{_e(w)}</div>' for w in valuation.warnings)
+        parts.extend(f'<div class="note">{_e(w)}</div>' for w in payload["warnings"])
 
     return "\n".join(parts)
 
 
-def report_filename(valuation: ResidualValuation, extension: str = "html") -> str:
+def _generated_on(payload: dict[str, Any]) -> str:
+    """Format the generation timestamp for the report header."""
+    raw = payload.get("generated_at")
+    if raw:
+        try:
+            return datetime.fromisoformat(raw).strftime("%d %B %Y")
+        except ValueError:
+            pass
+    return datetime.now(timezone.utc).strftime("%d %B %Y")
+
+
+def report_filename(
+    valuation: ResidualValuation | dict[str, Any], extension: str = "html"
+) -> str:
     """A tidy, filesystem-safe filename for the report."""
+    payload = (
+        valuation if isinstance(valuation, dict) else valuation_to_dict(valuation)
+    )
+    label = payload.get("battery", {}).get("label", "battery")
+
     stem = "".join(
         character if character.isalnum() or character in "-_" else "-"
-        for character in valuation.battery_label.lower().replace(" ", "-")
+        for character in label.lower().replace(" ", "-")
     )
     while "--" in stem:
         stem = stem.replace("--", "-")
-    date = (valuation.generated_at or datetime.now(timezone.utc)).strftime("%Y-%m-%d")
-    return f"battery-value-{stem.strip('-')}-{date}.{extension}"
+
+    raw = payload.get("generated_at")
+    try:
+        date_part = datetime.fromisoformat(raw).strftime("%Y-%m-%d") if raw else None
+    except ValueError:
+        date_part = None
+    date_part = date_part or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+    return f"battery-value-{stem.strip('-') or 'battery'}-{date_part}.{extension}"

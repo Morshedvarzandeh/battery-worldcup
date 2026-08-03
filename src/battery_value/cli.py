@@ -15,6 +15,7 @@ from .passport.models import BatteryPassport
 from .passport.resolver import PassportResolver
 from .report import build_html_report, report_filename
 from .serialisation import passport_to_dict, valuation_to_dict
+from .store import ValuationStore, default_store, normalise_reference
 from .valuation.config import ValuationConfig
 from .valuation.engine import ValuationEngine
 from .valuation.models import ResidualValuation
@@ -143,21 +144,171 @@ def cmd_value(args: argparse.Namespace) -> int:
     engine = _build_engine(args)
     valuation = engine.value(passport)
 
+    payload = valuation_to_dict(valuation)
+    store = ValuationStore(enabled=not args.no_store)
+    record = store.save(payload, passport=passport)
+
     if args.report is not None:
         destination = Path(args.report)
         if destination.is_dir():
-            destination = destination / report_filename(valuation)
+            destination = destination / report_filename(payload)
         destination.write_text(
-            build_html_report(valuation, include_technical=not args.summary_only),
+            build_html_report(payload, include_technical=not args.summary_only),
             encoding="utf-8",
         )
         print(f"report written to {destination}", file=sys.stderr)
 
     if args.json:
-        print(json.dumps(valuation_to_dict(valuation), indent=2))
+        print(json.dumps(payload, indent=2))
     elif not args.quiet:
         print(_render_valuation(valuation))
+        if record is not None:
+            print(f"  Reference: {record.reference}")
+            print("  Quote it to get this exact valuation back, prices and all.")
+            print()
     return 0
+
+
+def cmd_history(args: argparse.Namespace) -> int:
+    """List valuations already on record."""
+    store = default_store()
+    records = (
+        store.find_by_battery(args.battery, limit=args.limit)
+        if args.battery
+        else store.recent(limit=args.limit)
+    )
+
+    if args.json:
+        print(json.dumps(
+            [
+                {
+                    "reference": record.reference,
+                    "created_at": record.created_at.isoformat(),
+                    "battery_label": record.battery_label,
+                    "serial_number": record.serial_number,
+                    "residual_value": record.residual_value,
+                    "currency": record.currency,
+                    "confidence": record.confidence,
+                }
+                for record in records
+            ],
+            indent=2,
+        ))
+        return 0
+
+    if not records:
+        print("no valuations on record")
+        return 0
+
+    print(f"{'reference':<14s} {'date':<11s} {'battery':<38s} {'value':>14s}")
+    print("-" * 80)
+    for record in records:
+        print(record.summary_line())
+    print(f"\n{len(records)} of {store.count()} record(s) at {store.path}")
+    return 0
+
+
+def cmd_show(args: argparse.Namespace) -> int:
+    """Reprint a stored valuation, exactly as it was produced."""
+    record = default_store().get(args.reference)
+    if record is None:
+        print(
+            f"error: no valuation found for {normalise_reference(args.reference)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    if args.report is not None:
+        destination = Path(args.report)
+        if destination.is_dir():
+            destination = destination / report_filename(record.payload)
+        destination.write_text(
+            build_html_report(record.payload, include_technical=not args.summary_only),
+            encoding="utf-8",
+        )
+        print(f"report written to {destination}", file=sys.stderr)
+
+    if args.json:
+        print(json.dumps(record.payload, indent=2))
+    elif not args.quiet:
+        print(_render_stored(record))
+    return 0
+
+
+def cmd_forget(args: argparse.Namespace) -> int:
+    """Erase a stored valuation."""
+    if default_store().delete(args.reference):
+        print(f"deleted {normalise_reference(args.reference)}")
+        return 0
+    print(
+        f"error: no valuation found for {normalise_reference(args.reference)}",
+        file=sys.stderr,
+    )
+    return 1
+
+
+def cmd_prune(args: argparse.Namespace) -> int:
+    """Delete records past the retention period."""
+    store = default_store()
+    days = args.days if args.days is not None else store.retention_days
+    if days <= 0:
+        # A zero retention would silently wipe the store, which is never what
+        # someone reaching for `prune` meant.
+        print(
+            "error: retention must be at least 1 day. To clear everything, "
+            f"delete {store.path}",
+            file=sys.stderr,
+        )
+        return 1
+
+    removed = store.prune(days)
+    print(f"removed {removed} record(s) older than {days} days")
+    return 0
+
+
+def _render_stored(record) -> str:
+    """Render a stored valuation from its payload."""
+    payload = record.payload
+    plain = payload.get("plain", {})
+    battery = payload.get("battery", {})
+    out: list[str] = [
+        _RULE,
+        f"  {record.battery_label}",
+        _RULE,
+        f"  Reference {record.reference}   valued {record.created_at:%d %B %Y}"
+        f" ({record.age_days} days ago)",
+        "",
+        f"  {plain.get('headline', '')}",
+        "",
+        f"  {plain.get('confidence', {}).get('label', '')}."
+        f" {plain.get('confidence', {}).get('explanation', '')}",
+        "",
+        "  OPTIONS",
+    ]
+    for option in sorted(
+        payload.get("pathways", []),
+        key=lambda p: (not p.get("eligible"), -float(p["net_value"]["amount"])),
+    ):
+        marker = "*" if option.get("pathway") == payload.get("recommended_pathway") else " "
+        amount = (
+            option["net_value"]["formatted"]
+            if option.get("eligible")
+            else "not possible"
+        )
+        out.append(f"   {marker} {option.get('friendly_label', ''):<38s} {amount:>14s}")
+        if not option.get("eligible") and option.get("blockers"):
+            out.append(f"        - {option['blockers'][0]}")
+    out.extend([
+        "",
+        f"  Prices as at {payload.get('prices', {}).get('oldest_as_of', 'n/a')}"
+        " -- this is the valuation as originally produced, not a re-run.",
+        "",
+        f"  {battery.get('rated_kwh', '')} kWh | "
+        f"{float(battery.get('state_of_health', 0)) * 100:.0f}% health | "
+        f"{plain.get('chemistry', '')}",
+        _RULE,
+    ])
+    return "\n".join(out)
 
 
 def cmd_scan(args: argparse.Namespace) -> int:
@@ -370,6 +521,52 @@ def build_parser() -> argparse.ArgumentParser:
     packs_parser.add_argument("--search", help="filter by model, maker or vehicle")
     packs_parser.add_argument("--json", action="store_true", help="emit JSON")
     packs_parser.set_defaults(func=cmd_packs)
+
+    value_parser.add_argument(
+        "--no-store",
+        action="store_true",
+        help="do not keep this valuation on record",
+    )
+
+    history_parser = subparsers.add_parser(
+        "history", help="list valuations already on record"
+    )
+    history_parser.add_argument(
+        "--battery", help="serial number or battery id, to see one pack's history"
+    )
+    history_parser.add_argument("--limit", type=int, default=20)
+    history_parser.add_argument("--json", action="store_true", help="emit JSON")
+    history_parser.set_defaults(func=cmd_history)
+
+    show_parser = subparsers.add_parser(
+        "show", help="reprint a stored valuation by reference"
+    )
+    show_parser.add_argument("reference", help="e.g. BV-7K2P-M4X9")
+    show_parser.add_argument("--json", action="store_true", help="emit JSON")
+    show_parser.add_argument(
+        "--report", metavar="PATH", help="also write the HTML report to PATH"
+    )
+    show_parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="leave the technical detail out of the report",
+    )
+    show_parser.add_argument("--quiet", action="store_true")
+    show_parser.set_defaults(func=cmd_show)
+
+    forget_parser = subparsers.add_parser(
+        "forget", help="erase a stored valuation"
+    )
+    forget_parser.add_argument("reference")
+    forget_parser.set_defaults(func=cmd_forget)
+
+    prune_parser = subparsers.add_parser(
+        "prune", help="delete records past the retention period"
+    )
+    prune_parser.add_argument(
+        "--days", type=int, default=None, help="override the retention period"
+    )
+    prune_parser.set_defaults(func=cmd_prune)
 
     serve_parser = subparsers.add_parser("serve", help="run the API and scan UI")
     serve_parser.add_argument("--host", default="127.0.0.1")

@@ -221,3 +221,4 @@ __marimo__/
 .bwc-cache/
 prices/*.csv
 !examples/prices-sample.csv
+*.sqlite3

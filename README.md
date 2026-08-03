@@ -37,6 +37,17 @@ Then **Share the report** — a single self-contained HTML file with the full
 workings, which opens in any browser, prints to PDF, and goes straight into the
 phone's share sheet for WhatsApp, email or Files.
 
+Every valuation is kept under a short reference:
+
+```
+BV-7K2P-M4X9
+```
+
+Quote it any time and the same answer comes back — the same prices, the same
+number, nothing recomputed. Metal prices move weekly, so re-running a scan next
+month gives a different figure; that is the wrong answer when a customer rings
+up about the number they were quoted.
+
 ## Why four numbers, not one
 
 A retired pack does not have a single value. It has four, and the owner
@@ -93,6 +104,13 @@ bv scan  --file passport.json           # read the passport, no valuation
 bv prices                               # every price in use, and its source
 bv packs --search bmw                   # browse the pack catalogue
 bv serve                                # API + web UI on :8000
+
+bv history                              # valuations on record
+bv history --battery PACK-0042          # one pack's value over time
+bv show BV-7K2P-M4X9                    # reprint a stored valuation
+bv show BV-7K2P-M4X9 --report ./        # rebuild its report
+bv forget BV-7K2P-M4X9                  # erase it
+bv prune --days 365                     # enforce retention
 ```
 
 ### HTTP API
@@ -107,6 +125,10 @@ curl -X POST localhost:8000/v1/value \
 |---|---|
 | `POST /v1/value` | Scan and value. Includes a `plain` block of ready-written wording |
 | `POST /v1/report` | Self-contained HTML report, as a file download |
+| `GET /v1/valuations/{ref}` | A stored valuation, exactly as produced |
+| `GET /v1/valuations/{ref}/report` | Its report, rebuilt from the record |
+| `GET /v1/valuations` | Recent valuations, or one pack's history |
+| `DELETE /v1/valuations/{ref}` | Erase a record |
 | `POST /v1/decode` | Photo of a code → its payload text |
 | `POST /v1/value/image` | Decode and value in one call |
 | `POST /v1/scan` | Read a passport without valuing it |
@@ -219,10 +241,14 @@ photo of a code  →  decode  →  classify  →  fetch  →  normalise to Batte
 | `market/` | Price providers, FX, caching, provenance |
 | `valuation/` | Health, the four routes, sensitivity, plain-language wording |
 | `report.py` | The self-contained file an owner sends on |
+| `store.py` | The record, so a quoted number can be handed back later |
 | `api/`, `cli.py` | HTTP service with phone UI, and the `bv` command |
 
 ## Design commitments
 
+- **A quote stays a quote.** Valuations are stored as produced and retrieved
+  without recomputation, so the number a customer was given is still the number
+  they get when they ask again.
 - **Plain by default, complete on demand.** The owner sees words and one
   number; the specialist expands one toggle or downloads the report. Neither
   audience is served a compromise.
@@ -246,7 +272,7 @@ photo of a code  →  decode  →  classify  →  fetch  →  normalise to Batte
 
 ```bash
 pip install -e '.[all]'
-python -m pytest              # 282 tests, no network required
+python -m pytest              # 322 tests, no network required
 ```
 
 Tests run fully offline against an isolated cache. The QR tests degrade a clean

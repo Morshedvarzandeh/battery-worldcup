@@ -187,6 +187,59 @@ class TestApi:
         assert body["plain"]["headline"]
 
 
+class TestStoredValuations:
+    """The record a customer can come back to."""
+
+    def test_value_returns_a_reference(self, client, eu_dpp_document):
+        body = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()
+        assert body["reference"].startswith("BV-")
+
+    def test_reference_retrieves_the_same_answer(self, client, eu_dpp_document):
+        first = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()
+        stored = client.get(f"/v1/valuations/{first['reference']}")
+        assert stored.status_code == 200
+        assert stored.json() == first
+
+    def test_sloppy_reference_still_works(self, client, eu_dpp_document):
+        reference = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()["reference"]
+        typed = reference.replace("-", "").lower()
+        assert client.get(f"/v1/valuations/{typed}").status_code == 200
+
+    def test_stored_report_carries_the_reference(self, client, eu_dpp_document):
+        reference = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()["reference"]
+        response = client.get(f"/v1/valuations/{reference}/report")
+        assert response.status_code == 200
+        assert reference in response.text
+        assert response.headers["content-disposition"].startswith("attachment;")
+
+    def test_unknown_reference_is_404_with_guidance(self, client):
+        response = client.get("/v1/valuations/BV-ZZZZ-ZZZZ")
+        assert response.status_code == 404
+        assert "scan the battery again" in response.json()["detail"].lower()
+
+    def test_listing(self, client, eu_dpp_document):
+        client.post("/v1/value", json={"document": eu_dpp_document, "offline": True})
+        body = client.get("/v1/valuations").json()
+        assert body["count"] >= 1
+        assert body["valuations"][0]["reference"].startswith("BV-")
+
+    def test_delete(self, client, eu_dpp_document):
+        reference = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()["reference"]
+        assert client.delete(f"/v1/valuations/{reference}").status_code == 200
+        assert client.get(f"/v1/valuations/{reference}").status_code == 404
+        assert client.delete(f"/v1/valuations/{reference}").status_code == 404
+
+
 class TestCli:
     def test_value_renders_a_report(self, tmp_path, capsys, eu_dpp_document):
         path = tmp_path / "passport.json"
@@ -260,6 +313,55 @@ class TestCli:
         ]) == 0
         reports = list(tmp_path.glob("battery-value-*.html"))
         assert len(reports) == 1
+
+    def test_value_prints_a_reference(self, tmp_path, capsys, eu_dpp_document):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+
+        assert main(["value", "--file", str(passport), "--offline"]) == 0
+        assert "Reference: BV-" in capsys.readouterr().out
+
+    def test_history_and_show_round_trip(self, tmp_path, capsys, eu_dpp_document):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+
+        main(["value", "--file", str(passport), "--offline", "--quiet"])
+        main(["history", "--json"])
+        records = json.loads(capsys.readouterr().out)
+        assert len(records) == 1
+        reference = records[0]["reference"]
+
+        assert main(["show", reference]) == 0
+        shown = capsys.readouterr().out
+        assert reference in shown
+        assert "not a re-run" in shown
+
+    def test_no_store_skips_recording(self, tmp_path, capsys, eu_dpp_document):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+
+        main(["value", "--file", str(passport), "--offline", "--no-store", "--quiet"])
+        main(["history", "--json"])
+        assert json.loads(capsys.readouterr().out) == []
+
+    def test_show_unknown_reference_exits_nonzero(self, capsys):
+        assert main(["show", "BV-ZZZZ-ZZZZ"]) == 1
+        assert "no valuation found" in capsys.readouterr().err
+
+    def test_prune_rejects_zero_retention(self, capsys):
+        assert main(["prune", "--days", "0"]) == 1
+        assert "at least 1 day" in capsys.readouterr().err
+
+    def test_forget(self, tmp_path, capsys, eu_dpp_document):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+
+        main(["value", "--file", str(passport), "--offline", "--quiet"])
+        main(["history", "--json"])
+        reference = json.loads(capsys.readouterr().out)[0]["reference"]
+
+        assert main(["forget", reference]) == 0
+        assert main(["forget", reference]) == 1
 
     def test_qr_payload_with_inline_json(self, capsys, eu_dpp_document):
         payload = json.dumps(eu_dpp_document)
