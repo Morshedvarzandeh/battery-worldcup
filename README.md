@@ -33,6 +33,18 @@ that is to take it apart and sell the parts.
   Reuse it for home or grid storage  −€1,140
 ```
 
+and, because the pack model is known, how it is holding up compared with others
+like it:
+
+```
+Ageing normally
+
+Yours is at 81% after about 7 years, and most batteries like it are
+around 75%. That is normal wear.
+At this rate it stays good enough to sell as a working battery for
+about 4 years.
+```
+
 Then **Share the report** — a single self-contained HTML file with the full
 workings, which opens in any browser, prints to PDF, and goes straight into the
 phone's share sheet for WhatsApp, email or Files.
@@ -227,6 +239,8 @@ custom-layer API.
 
 - **[The owner's view](docs/end-user.md)** — the plain-language rules, the
   photo-decoding path, and the shareable report.
+- **[How it is wearing](docs/aging.md)** — fade curves per pack model, the
+  verdict against a cohort, and the two things the layer refuses to say.
 - **[Methodology](docs/methodology.md)** — how each of the four values is
   calculated, what drives confidence, and the known limitations.
 - **[Market data](docs/market-data.md)** — every price source, the

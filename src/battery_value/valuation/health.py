@@ -14,6 +14,7 @@ from datetime import date
 from enum import Enum
 
 from ..materials.chemistry import ChemistrySpec
+from ..materials.degradation import DegradationProfile
 from ..passport.models import BatteryPassport, PackCondition
 from .config import ValuationConfig
 
@@ -79,19 +80,32 @@ class HealthAssessment:
         return not self.condition.blocks_reuse and not self.concerns
 
 
-def _estimate_from_cycles(
-    cycle_count: int, chemistry: ChemistrySpec | None, declared_life: int | None
-) -> tuple[float, int]:
-    """Estimate SoH from cycles, returning ``(soh, cycle_life_used)``.
+def _rated_cycle_life(
+    chemistry: ChemistrySpec | None,
+    profile: DegradationProfile | None,
+    declared_life: int | None,
+) -> int | None:
+    """Cycle life to 80% health, most specific source first.
+
+    The passport's own figure wins, then the pack model's, then the chemistry's.
+    A model-specific figure matters: an LFP Model 3 and an NCA Model 3 share a
+    body and nothing else about how long their cells last.
+    """
+    if declared_life:
+        return declared_life
+    if profile and profile.cycle_life_to_80pct:
+        return profile.cycle_life_to_80pct
+    return chemistry.typical_cycle_life_to_80pct if chemistry else None
+
+
+def _estimate_from_cycles(cycle_count: int, cycle_life: int | None) -> float:
+    """Estimate SoH from cycles alone.
 
     Rated cycle life is quoted to 80% SoH, so a pack at its full rated life has
     lost 20% capacity; fade is extrapolated linearly beyond that.
     """
-    cycle_life = declared_life or (
-        chemistry.typical_cycle_life_to_80pct if chemistry else 1800
-    )
-    fade = 0.20 * (cycle_count / cycle_life) if cycle_life else 0.0
-    return max(0.0, 1.0 - fade), cycle_life
+    life = cycle_life or 1800
+    return max(0.0, 1.0 - 0.20 * (cycle_count / life))
 
 
 def assess_health(
@@ -100,6 +114,8 @@ def assess_health(
     config: ValuationConfig,
     *,
     as_of: date | None = None,
+    profile: DegradationProfile | None = None,
+    climate_factor: float = 1.0,
 ) -> HealthAssessment:
     """Resolve state of health and remaining life for a pack.
 
@@ -108,6 +124,10 @@ def assess_health(
         chemistry: Resolved chemistry, used for default cycle life.
         config: Valuation assumptions.
         as_of: Valuation date, defaulting to today.
+        profile: Degradation profile for the identified pack model. When one is
+            available, health estimated from age uses that model's own fade
+            curve instead of a single rate applied to every battery ever made.
+        climate_factor: Multiplier on calendar fade for the pack's climate.
 
     Returns:
         A health assessment recording which evidence it relied on.
@@ -121,26 +141,33 @@ def assess_health(
     declared_soh = passport.health.soh_fraction
     declared_life = passport.technical.expected_lifetime_cycles
 
+    cycle_life = _rated_cycle_life(chemistry, profile, declared_life)
+
     if declared_soh is not None:
         soh, source = declared_soh, HealthSource.MEASURED
-        cycle_life = declared_life or (
-            chemistry.typical_cycle_life_to_80pct if chemistry else None
-        )
     elif cycle_count:
-        soh, cycle_life = _estimate_from_cycles(cycle_count, chemistry, declared_life)
+        if profile is not None and age_years:
+            # With both a cycle count and an age, the pack model's own curve
+            # beats counting cycles alone, which ignores calendar fade entirely
+            # and so flatters any pack that has simply been sitting around.
+            soh = profile.expected_soh(
+                age_years,
+                cycles=cycle_count,
+                rated_kwh=rated_kwh,
+                climate_factor=climate_factor,
+            )
+        else:
+            soh = _estimate_from_cycles(cycle_count, cycle_life)
         source = HealthSource.CYCLES
     elif age_years:
-        soh = max(0.0, 1.0 - age_years * config.calendar_fade_per_year)
+        if profile is not None:
+            soh = profile.expected_soh(age_years, climate_factor=climate_factor)
+        else:
+            soh = max(0.0, 1.0 - age_years * config.calendar_fade_per_year)
         source = HealthSource.AGE
-        cycle_life = declared_life or (
-            chemistry.typical_cycle_life_to_80pct if chemistry else None
-        )
     else:
         soh = config.assumed_soh_when_unknown
         source = HealthSource.ASSUMED
-        cycle_life = declared_life or (
-            chemistry.typical_cycle_life_to_80pct if chemistry else None
-        )
         concerns.append(
             "state of health was not available from any source; "
             f"assumed {soh:.0%}, so this valuation is indicative only"

@@ -9,7 +9,8 @@ from datetime import date, datetime, timezone
 from ..errors import ValuationError
 from ..materials.bom import build_bom
 from ..materials.chemistry import ChemistrySpec, try_resolve_chemistry
-from ..materials.battery_data import recovery_library
+from ..materials.battery_data import degradation_library, recovery_library
+from ..materials.degradation import DEFAULT_CLIMATE, DegradationLibrary
 from ..materials.recovery import RecoveryLibrary, load_recovery
 from ..market.resolver import PriceResolver, build_resolver
 from ..money import Money
@@ -17,6 +18,7 @@ from ..packs.enrichment import EnrichmentResult, enrich_passport
 from ..packs.providers import PackResolver, build_pack_resolver
 from ..passport.models import BatteryPassport
 from ..passport.resolver import PassportResolver
+from .aging import AgingVerdict, assess_aging
 from .config import ValuationConfig
 from .health import assess_health
 from .models import (
@@ -52,6 +54,9 @@ class ValuationEngine:
     recovery: RecoveryLibrary | None = None
     """Recovery terms. Read from battery-data when configured, else bundled."""
 
+    degradation: DegradationLibrary | None = None
+    """Fade curves per pack model. Read from battery-data when configured."""
+
     def __post_init__(self) -> None:
         if self.prices is None:
             self.prices = build_resolver(currency=self.config.currency)
@@ -63,16 +68,36 @@ class ValuationEngine:
             # Resolved once per engine rather than per valuation: payables move
             # with the market, not between two scans a second apart.
             self.recovery = recovery_library()
+        if self.degradation is None:
+            self.degradation = degradation_library()
 
-    def value_scan(self, payload: str, *, as_of: date | None = None) -> ResidualValuation:
+    def value_scan(
+        self,
+        payload: str,
+        *,
+        as_of: date | None = None,
+        climate: str = DEFAULT_CLIMATE,
+    ) -> ResidualValuation:
         """Value a pack straight from a scanned QR payload."""
         passport = self.passports.from_qr(payload)
-        return self.value(passport, as_of=as_of)
+        return self.value(passport, as_of=as_of, climate=climate)
 
     def value(
-        self, passport: BatteryPassport, *, as_of: date | None = None
+        self,
+        passport: BatteryPassport,
+        *,
+        as_of: date | None = None,
+        climate: str = DEFAULT_CLIMATE,
     ) -> ResidualValuation:
         """Value a pack from its passport.
+
+        Args:
+            passport: The battery passport to value.
+            as_of: Valuation date, defaulting to today.
+            climate: Where the pack has spent its life -- ``cool``,
+                ``temperate``, ``warm`` or ``hot``. Heat is the main thing that
+                separates two otherwise identical packs, so it is worth passing
+                when it is known, and left temperate when it is not.
 
         Raises:
             ValuationError: If the passport lacks the fields needed even after
@@ -94,8 +119,36 @@ class ValuationEngine:
                 "an Ah rating plus nominal voltage."
             )
 
-        health = assess_health(passport, chemistry, self.config, as_of=today)
+        profile = self.degradation.resolve(
+            pack_model.key if pack_model else None, chemistry
+        )
+        climate_factor = (
+            self.degradation.climate_factor(climate, profile.climate_sensitivity)
+            if profile
+            else 1.0
+        )
+        if profile:
+            provenance.append(
+                f"wear curve: {profile.label} "
+                f"({'pack model' if not profile.is_fallback else 'chemistry fallback'}, "
+                f"{profile.source})"
+            )
+
+        health = assess_health(
+            passport,
+            chemistry,
+            self.config,
+            as_of=today,
+            profile=profile,
+            climate_factor=climate_factor,
+        )
         warnings.extend(health.concerns)
+
+        aging = assess_aging(
+            health, profile, self.degradation, self.config, climate=climate
+        )
+        if aging is not None:
+            warnings.extend(_aging_warnings(aging))
 
         bom = build_bom(
             chemistry=chemistry,
@@ -143,6 +196,7 @@ class ValuationEngine:
             currency=self.config.currency,
             pack_model=pack_model,
             health_source=health.source.value,
+            aging=aging,
             warnings=warnings,
             provenance=provenance,
             generated_at=datetime.now(timezone.utc),
@@ -267,6 +321,37 @@ class ValuationEngine:
             high=Money(max(highs), self.config.currency),
             driver=dominant.name,
         )
+
+
+def _aging_warnings(aging) -> list[str]:
+    """Caveats that follow from how the pack is ageing, not from its data quality.
+
+    These belong in the answer rather than in the small print: a pack about to
+    fall out of the resale market is worth less today than one with years of
+    headroom, and today's health reading says nothing about that on its own.
+    """
+    warnings: list[str] = []
+
+    if aging.verdict is AgingVerdict.BEHIND:
+        warnings.append(
+            f"This battery has lost about {abs(aging.deviation_points):.0f} points "
+            f"more capacity than others of the same model and age, so it is "
+            "likely to be valued at the lower end of the range."
+        )
+
+    if aging.already_below_resale_floor and not aging.already_below_storage_floor:
+        warnings.append(
+            "It has already dropped below the health buyers look for in a "
+            "replacement battery, which removes the highest-value option."
+        )
+    elif aging.value_at_risk:
+        warnings.append(
+            f"On its current trend it drops below resale grade in about "
+            f"{aging.years_to_resale_floor:.0f} year(s). Selling it sooner rather "
+            "than later is worth real money."
+        )
+
+    return warnings
 
 
 def _scrap_form(element: str) -> str:

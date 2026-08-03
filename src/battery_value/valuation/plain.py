@@ -14,6 +14,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from ..materials.chemistry import ChemistrySpec
+from .aging import AgingAssessment, AgingVerdict
 from .models import ResidualValuation
 
 # How each chemistry is described to someone who has never heard of NMC.
@@ -126,6 +127,140 @@ def health_in_plain_words(soh: float) -> str:
     return "near the end of its working life"
 
 
+def _years(value: float) -> str:
+    """Say a number of years the way a person would."""
+    if value < 1:
+        return "less than a year"
+    if value < 1.5:
+        return "about a year"
+    return f"about {value:.0f} years"
+
+
+def aging_headline(aging: AgingAssessment) -> str:
+    """One sentence on whether this battery is wearing out normally.
+
+    Answers the question a state-of-health figure cannot answer alone: 87% is
+    excellent on a nine-year-old car and disappointing on a two-year-old one.
+    """
+    typical = f"{aging.expected_soh:.0%}"
+    mine = f"{aging.observed_soh:.0%}"
+    age = _years(aging.age_years or 0)
+
+    if aging.verdict is AgingVerdict.UNKNOWN:
+        return (
+            f"After {age}, a battery like this is usually around {typical} "
+            "health. We could not check yours against that without a capacity "
+            "reading."
+        )
+
+    if aging.verdict is AgingVerdict.AHEAD:
+        return (
+            f"Yours is at {mine} after {age}, where most batteries like it are "
+            f"around {typical}. It has held up better than most."
+        )
+
+    if aging.verdict is AgingVerdict.BEHIND:
+        return (
+            f"Yours is at {mine} after {age}, where most batteries like it are "
+            f"around {typical}. It has worn faster than most."
+        )
+
+    return (
+        f"Yours is at {mine} after {age}, and most batteries like it are around "
+        f"{typical}. That is normal wear."
+    )
+
+
+def aging_outlook(aging: AgingAssessment) -> str:
+    """What the wear means for the value, looking forward.
+
+    The sentence people act on. A battery two years from dropping out of the
+    resale market is worth selling now, and nothing in today's health figure
+    says so.
+    """
+    if aging.already_below_storage_floor:
+        return (
+            "It is now too worn for anyone to rebuild or resell, so recycling "
+            "is what is left."
+        )
+    if aging.already_below_resale_floor:
+        if aging.years_to_storage_floor is None:
+            return (
+                "It is past the point where someone would fit it to another "
+                "vehicle, but it has plenty left for home or grid storage."
+            )
+        return (
+            "It is past the point where someone would fit it to another "
+            f"vehicle. It stays useful for home or grid storage for "
+            f"{_years(aging.years_to_storage_floor)} yet."
+        )
+    if aging.years_to_resale_floor is None or aging.years_to_resale_floor > 10:
+        # Past a decade the curve is extrapolating well beyond anything anyone
+        # has measured, so a precise figure would be false precision.
+        return (
+            "At this rate it stays good enough to sell as a working battery "
+            "for many years yet, so there is no rush."
+        )
+    if aging.years_to_resale_floor <= 2.0:
+        return (
+            f"At this rate it has {_years(aging.years_to_resale_floor)} left "
+            "before buyers stop treating it as a working battery, which is when "
+            "its value drops. Selling before then is worth real money."
+        )
+    return (
+        f"At this rate it stays good enough to sell as a working battery for "
+        f"{_years(aging.years_to_resale_floor)}."
+    )
+
+
+def aging_notes(aging: AgingAssessment) -> list[str]:
+    """The handful of things that explain the wear, in plain words."""
+    notes: list[str] = []
+
+    harder = aging.uses_more_than_typical
+    if harder is not None and aging.cycles_used and aging.cycles_expected:
+        if harder:
+            notes.append(
+                f"It has been charged and discharged about "
+                f"{aging.cycles_used:,} times, where a typical battery of this "
+                f"age would be near {aging.cycles_expected:,.0f}. It has done "
+                "more work than most."
+            )
+        elif aging.cycles_used < aging.cycles_expected * 0.85:
+            notes.append(
+                f"It has only been through about {aging.cycles_used:,} charges, "
+                f"fewer than the {aging.cycles_expected:,.0f} typical at this "
+                "age, so it has had an easy life."
+            )
+
+    cooling = aging.thermal_management
+    if cooling == "passive":
+        notes.append(
+            "This pack has no cooling system, so heat is the main thing that "
+            "wears it out. Fast charging in summer is what does the damage."
+        )
+    elif cooling == "liquid":
+        notes.append(
+            "This pack is liquid-cooled, which is why batteries of this model "
+            "generally age slowly and hot weather matters less."
+        )
+
+    if aging.climate in {"warm", "hot"}:
+        notes.append(
+            "Hot climates wear batteries out faster, and that is allowed for "
+            "in the figures above."
+        )
+
+    if aging.annual_fade_ahead:
+        notes.append(
+            f"Expect it to lose roughly {aging.annual_fade_ahead:.1f} more "
+            "points of health over the next year."
+        )
+
+    notes.extend(aging.notes)
+    return notes
+
+
 def headline_sentence(valuation: ResidualValuation) -> str:
     """The single sentence that answers the question the user actually asked."""
     value = valuation.residual_value
@@ -164,6 +299,9 @@ def why_this_value(valuation: ResidualValuation) -> list[str]:
     if note:
         reasons.append(note)
 
+    if valuation.aging and valuation.aging.is_comparable:
+        reasons.append(aging_headline(valuation.aging))
+
     if valuation.pack_model:
         reasons.append(
             f"We recognised it as a {valuation.pack_model.label}, so we know what "
@@ -189,6 +327,12 @@ def how_to_improve(valuation: ResidualValuation) -> list[str]:
         suggestions.append(
             "A health check from a garage, or the vehicle's own battery report, "
             "would make the biggest difference — health drives most of the value."
+        )
+    elif valuation.aging and not valuation.aging.is_comparable:
+        suggestions.append(
+            "A measured capacity reading would let us tell you whether this "
+            "battery has held up better or worse than others of the same model, "
+            "which is what a buyer will want to know."
         )
 
     if valuation.pack_model is None:

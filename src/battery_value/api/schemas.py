@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -47,6 +47,14 @@ class ValueRequest(ScanRequest):
             "Prices the caller has actually been quoted, per tonne of the traded "
             "form, in the requested currency. These take priority over every "
             "other provider."
+        ),
+    )
+    climate: Literal["cool", "temperate", "warm", "hot"] = Field(
+        default="temperate",
+        description=(
+            "Where the pack has spent its life. Heat is the largest single "
+            "difference between two otherwise identical batteries, so it is "
+            "worth setting when it is known and leaving temperate when it is not."
         ),
     )
 

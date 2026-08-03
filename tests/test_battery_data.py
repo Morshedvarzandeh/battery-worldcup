@@ -248,6 +248,70 @@ class TestAgainstLiveDatabase:
             == bundled.second_life.minimum_viable_soh
         )
 
+    def test_every_degradation_profile_survives_the_round_trip(self):
+        """The fade curves too, and the curve itself rather than just its fields.
+
+        A profile that read back with the right numbers but computed a
+        different state of health would pass a field-by-field check and still
+        be wrong, so the curve is evaluated at five ages on both sides.
+        """
+        from battery_value.materials.battery_data import (
+            load_degradation_from_battery_data,
+        )
+        from battery_value.materials.degradation import load_degradation
+
+        live = load_degradation_from_battery_data()
+        bundled = load_degradation()
+
+        fields = (
+            "fade_at_8y",
+            "cycle_life_to_80pct",
+            "reference_km_per_year",
+            "km_per_kwh",
+            "calendar_exponent",
+            "knee_onset_soh",
+            "knee_acceleration",
+            "thermal_management",
+            "climate_sensitivity",
+            "spread_points_at_8y",
+            "confidence",
+            "basis",
+            "notes",
+        )
+
+        assert set(live.by_pack_model) == set(bundled.by_pack_model)
+        assert set(live.by_chemistry) == set(bundled.by_chemistry)
+
+        pairs = [
+            (key, want, live.by_pack_model[key])
+            for key, want in bundled.by_pack_model.items()
+        ] + [
+            (key, want, live.by_chemistry[key])
+            for key, want in bundled.by_chemistry.items()
+        ]
+
+        for key, want, got in pairs:
+            for field in fields:
+                expected, actual = getattr(want, field), getattr(got, field)
+                if isinstance(expected, (int, float)) and not isinstance(
+                    expected, bool
+                ):
+                    assert float(actual) == pytest.approx(
+                        float(expected)
+                    ), f"{key}.{field}"
+                else:
+                    assert actual == expected, f"{key}.{field}"
+
+            for age in (1, 3, 5, 8, 12):
+                assert got.expected_soh(age, rated_kwh=50) == pytest.approx(
+                    want.expected_soh(age, rated_kwh=50)
+                ), f"{key} at {age}y"
+
+        assert live.climate_factors == pytest.approx(bundled.climate_factors)
+        assert live.climate_sensitivity_weights == pytest.approx(
+            bundled.climate_sensitivity_weights
+        )
+
     def test_snapshot_round_trips(self, tmp_path):
         """battery-value JSON -> battery-data -> battery-value JSON."""
         from battery_value.packs.battery_data import refresh_snapshot

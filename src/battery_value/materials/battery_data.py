@@ -23,6 +23,7 @@ import os
 from datetime import date
 from typing import Any
 
+from .degradation import DegradationLibrary, build_library, load_degradation
 from .recovery import (
     ElementRecovery,
     LogisticsModel,
@@ -84,6 +85,41 @@ SELECT key, value_num
    AND valid_from <= %(today)s
    AND (valid_to IS NULL OR valid_to > %(today)s)
 """
+
+_DEGRADATION_QUERY = """
+SELECT p.uid AS product_uid, d.chemistry, d.thermal_management::text,
+       d.fade_at_8y, d.cycle_life_to_80pct, d.reference_km_per_year,
+       d.km_per_kwh, d.calendar_exponent, d.knee_onset_soh, d.knee_acceleration,
+       d.climate_sensitivity::text, d.spread_points_at_8y, d.confidence::text,
+       d.basis, d.notes
+  FROM bd.degradation_profile d
+  LEFT JOIN bd.product p ON p.id = d.product_id
+ WHERE d.valid_from <= %(today)s
+   AND (d.valid_to IS NULL OR d.valid_to > %(today)s)
+"""
+
+# valuation_assumption keys that configure the degradation curve rather than a
+# pathway's economics.
+_CLIMATE_PREFIX = "climate_factor."
+_CLIMATE_WEIGHT_PREFIX = "climate_sensitivity."
+_DEGRADATION_DEFAULT_PREFIX = "degradation."
+
+
+def _confidence_band(value: Any) -> str | None:
+    """battery-data's numeric confidence back into the band the datasets use.
+
+    The thresholds mirror the export's own mapping, so a profile written out
+    and read back reports the same confidence rather than quietly dropping to
+    the least trusted band.
+    """
+    if value is None:
+        return None
+    number = float(value)
+    if number >= 0.80:
+        return "high"
+    if number >= 0.65:
+        return "medium"
+    return "low"
 
 
 def _process_key(uid: str) -> str:
@@ -284,6 +320,156 @@ def load_recovery_from_battery_data(dsn: str | None = None) -> RecoveryLibrary:
             assumptions = [dict(row) for row in cursor.fetchall()]
 
     return build_recovery_library(processes, yields, costs, logistics, assumptions)
+
+
+def build_degradation_library(
+    profile_rows: list[dict[str, Any]],
+    assumption_rows: list[dict[str, Any]],
+    *,
+    fallback: DegradationLibrary | None = None,
+) -> DegradationLibrary:
+    """Assemble a :class:`DegradationLibrary` from battery-data rows.
+
+    The rows are reshaped into the bundled dataset's own structure and handed to
+    the same builder, so a profile means exactly the same thing whichever side
+    it came from -- and the two can be compared row for row in a test.
+    """
+    fallback = fallback or load_degradation()
+
+    assumptions = {row["key"]: float(row["value_num"]) for row in assumption_rows}
+
+    def scoped(prefix: str, default: dict[str, float]) -> dict[str, float]:
+        found = {
+            key[len(prefix):]: value
+            for key, value in assumptions.items()
+            if key.startswith(prefix)
+        }
+        return found or dict(default)
+
+    defaults = dict(scoped(_DEGRADATION_DEFAULT_PREFIX, {}))
+    profiles: list[dict[str, Any]] = []
+    chemistry_fallbacks: list[dict[str, Any]] = []
+
+    for row in profile_rows:
+        entry = {
+            "fade_at_8y": float(row["fade_at_8y"]),
+            "cycle_life_to_80pct": row.get("cycle_life_to_80pct"),
+            "reference_km_per_year": row.get("reference_km_per_year"),
+            "km_per_kwh": row.get("km_per_kwh"),
+            "calendar_exponent": row.get("calendar_exponent"),
+            "knee_onset_soh": row.get("knee_onset_soh"),
+            "knee_acceleration": row.get("knee_acceleration"),
+            "thermal_management": row.get("thermal_management") or "unknown",
+            "climate_sensitivity": row.get("climate_sensitivity"),
+            "spread_points_at_8y": row.get("spread_points_at_8y"),
+            "confidence": _confidence_band(row.get("confidence")),
+            "basis": row.get("basis") or "",
+            "notes": row.get("notes") or "",
+        }
+        entry = {key: value for key, value in entry.items() if value is not None}
+
+        product_uid = row.get("product_uid")
+        if product_uid:
+            # 'pack/nissan/nissan-leaf-ze1-40' -> 'nissan-leaf-ze1-40'
+            profiles.append(
+                {**entry, "pack_model": str(product_uid).rsplit("/", 1)[-1]}
+            )
+        elif row.get("chemistry"):
+            chemistry_fallbacks.append({**entry, "chemistry": row["chemistry"]})
+
+    if not profiles and not chemistry_fallbacks:
+        raise ValueError("battery-data returned no degradation profiles")
+
+    raw = {
+        "updated": date.today().isoformat(),
+        "defaults": {
+            "reference_km_per_year": defaults.get("reference_km_per_year", 13500.0),
+            "km_per_kwh": defaults.get("km_per_kwh", 5.5),
+            "calendar_exponent": defaults.get("calendar_exponent", 0.5),
+            "knee_onset_soh": defaults.get("knee_onset_soh", 0.70),
+            "knee_acceleration": defaults.get("knee_acceleration", 1.6),
+            "spread_points_at_8y": defaults.get("spread_points_at_8y", 5.0),
+        },
+        "climate_factors": scoped(_CLIMATE_PREFIX, fallback.climate_factors),
+        "climate_sensitivity_weights": scoped(
+            _CLIMATE_WEIGHT_PREFIX, fallback.climate_sensitivity_weights
+        ),
+        "profiles": profiles,
+        "fallback_by_chemistry": chemistry_fallbacks,
+    }
+
+    library = build_library(
+        raw,
+        pack_labels={
+            key: profile.label
+            for key, profile in fallback.by_pack_model.items()
+        },
+        source="battery-data",
+    )
+
+    # A database that carries model profiles but no chemistry defaults would
+    # otherwise leave unidentified packs with no curve at all.
+    if not library.by_chemistry:
+        return DegradationLibrary(
+            updated=library.updated,
+            notes=library.notes,
+            sources=library.sources,
+            climate_factors=library.climate_factors,
+            climate_sensitivity_weights=library.climate_sensitivity_weights,
+            by_pack_model=library.by_pack_model,
+            by_chemistry=fallback.by_chemistry,
+            source=library.source,
+        )
+    return library
+
+
+def load_degradation_from_battery_data(dsn: str | None = None) -> DegradationLibrary:
+    """Query a battery-data database for the current degradation profiles.
+
+    Raises:
+        RuntimeError: If no DSN is configured or psycopg is missing.
+    """
+    resolved = dsn or os.environ.get(ENV_DSN)
+    if not resolved:
+        raise RuntimeError(f"no battery-data database configured; set {ENV_DSN}")
+
+    try:
+        import psycopg
+        from psycopg.rows import dict_row
+    except ImportError as exc:
+        raise RuntimeError(
+            "psycopg is required to read battery-data; "
+            "pip install 'battery-value[batterydata]'"
+        ) from exc
+
+    params = {"today": date.today()}
+    with psycopg.connect(resolved, row_factory=dict_row) as connection:
+        with connection.cursor() as cursor:
+            cursor.execute(_DEGRADATION_QUERY, params)
+            profiles = [dict(row) for row in cursor.fetchall()]
+            cursor.execute(_ASSUMPTION_QUERY, params)
+            assumptions = [dict(row) for row in cursor.fetchall()]
+
+    return build_degradation_library(profiles, assumptions)
+
+
+def degradation_library(dsn: str | None = None) -> DegradationLibrary:
+    """The best available fade curves.
+
+    Live from battery-data when it is configured and reachable, otherwise the
+    bundled dataset.
+    """
+    if not (dsn or os.environ.get(ENV_DSN)):
+        return load_degradation()
+    try:
+        return load_degradation_from_battery_data(dsn)
+    except Exception as exc:  # noqa: BLE001 - never fail a valuation on this
+        logger.warning(
+            "could not read degradation profiles from battery-data (%s); "
+            "using the bundled dataset",
+            exc,
+        )
+        return load_degradation()
 
 
 def recovery_library(dsn: str | None = None) -> RecoveryLibrary:

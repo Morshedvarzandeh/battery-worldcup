@@ -29,6 +29,7 @@ QR payload
    ↓  passport/adapters/      detect schema, normalise into BatteryPassport
    ↓  packs/                  identify pack model, fill gaps, load component list
    ↓  valuation/health.py     resolve state of health and remaining life
+   ↓  valuation/aging.py      compare with the model's fade curve, forecast it
    ↓  materials/bom.py        build the bill of materials
    ↓  market/                 price every material, with provenance
    ↓  valuation/pathways.py   price all four routes
@@ -44,8 +45,8 @@ from the best available evidence, and which evidence was used is recorded:
 | Source | How | Confidence |
 |---|---|---|
 | `measured` | Declared, or derived from measured capacity ÷ nameplate | 1.00 |
-| `cycles` | Rated cycle life is quoted to 80% SoH, so fade = 0.20 × (cycles ÷ rated life) | 0.72 |
-| `age` | Calendar fade of 2.3%/year | 0.52 |
+| `cycles` | The pack model's fade curve at this age and cycle count; without a curve, fade = 0.20 × (cycles ÷ rated life) | 0.72 |
+| `age` | The pack model's fade curve; without a curve, 2.3%/year | 0.52 |
 | `assumed` | Configured default, flagged as indicative only | 0.25 |
 
 A measurement older than 180 days loses confidence progressively — a year-old SoH
@@ -53,6 +54,32 @@ reading on a pack still in service is a guess, not a measurement.
 
 **Remaining life** is the cycles left before the pack falls below the second-life
 floor (50% SoH), derived from the implied fade per cycle.
+
+## Wear against the pack's own model
+
+A health figure is a number without a yardstick: 87% is excellent on a
+nine-year-old Leaf and disappointing on a two-year-old Kona. Once the pack model
+is identified, its fade curve supplies the yardstick, and three further answers
+follow — where this pack stands against others like it, how hard it has been
+worked, and when it stops being worth anything to a buyer.
+
+Fade goes with the **square root of time**, which is what diffusion-limited film
+growth predicts and what field data shows. Cycling is charged only above the
+reference mileage the curve was calibrated at, so the same kilometres are not
+billed twice. Cooling design, not chemistry, is what separates real fleets.
+
+Two things the layer refuses to do, both load-bearing:
+
+- **No circular verdicts.** Health estimated from age or cycles cannot be graded
+  against the curve that produced it — the answer would be "typical" whatever
+  the battery is really doing. A verdict needs a measurement.
+- **No verdict without a spread.** Each profile carries one standard deviation
+  across real packs of its model, so a pack inside it reads as normal rather
+  than as a small anomaly.
+
+The forecast feeds back into the number: a pack about to fall below the resale
+floor is raised as a warning, because today's health reading does not say so and
+the value drop is real. Full detail in [aging.md](aging.md).
 
 ## Bill of materials
 
@@ -200,6 +227,10 @@ For how these numbers are presented to a non-specialist, see
 - **Used-part values are estimates.** They move with a thin second-hand market
   and should be refreshed from live listings.
 - **No regional variation.** Costs are European road-freight and labour rates.
+- **Fade curves are cohort averages.** They describe a population of one pack
+  model, never an individual battery, and calendar and cycle fade are added
+  rather than combined — they share mechanisms, so the truth sits slightly
+  below the sum.
 - **No time value.** Values are spot, not discounted over a holding period.
 - **Sensitivity is one-at-a-time**, not a correlated Monte Carlo. Nickel and
   cobalt move together in reality, so the true band is wider than reported.

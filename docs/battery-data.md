@@ -14,6 +14,7 @@ So battery-value reads it rather than keeping a rival copy.
 |---|---|---|
 | Which pack is in which car | ✅ owns it | reads it |
 | Pack assembly, chemistry, mass, energy | ✅ owns it | reads it |
+| How fast each pack model wears out | ✅ owns it | reads it |
 | Recovery rates and refiner payables | ✅ owns it | reads it |
 | Used-part and OEM replacement prices | ✅ owns it | reads it |
 | **Live metal prices** | deliberately absent | ✅ owns it |
@@ -119,6 +120,26 @@ validity windows exist to prevent, and reading live is what makes them count.
 Falling back to the bundled dataset is logged rather than silent. The
 difference between live and bundled payables is real money.
 
+## And so are the fade curves
+
+`degradation_profile` holds how fast each pack model wears out — the eight-year
+fade, the mileage that figure assumes, the cooling design, and the spread across
+real packs of that model. It is what lets the valuation say whether a battery is
+ageing normally rather than just how worn it is.
+
+```python
+from battery_value.materials.battery_data import degradation_library
+
+curves = degradation_library()
+curves.for_pack_model("nissan-leaf-ze1-40").expected_soh(8, rated_kwh=40)  # 0.810
+```
+
+Two columns there are load-bearing and easy to drop. `spread_points_at_8y` is
+what turns "below average" — true of half of everything — into a statement worth
+making. `reference_km_per_year` records how much cycling `fade_at_8y` already
+contains, without which a consumer adds a full cycle term on top and bills the
+same kilometres twice. See [aging.md](aging.md).
+
 ## Round trip
 
 The path is closed, and the equality is a test rather than a claim:
@@ -128,7 +149,7 @@ battery-value JSON  →  export  →  battery-data Postgres  →  bv sync  →  
 ```
 
 **All twenty pack models value identically from either source, across all four
-pathways.** Getting there caught four things the export was quietly dropping —
+pathways, and all thirty-four fade curves return the same health at every age.** Getting there caught four things the export was quietly dropping —
 the human label, every component except modules, the demand tier, and aliases —
 each of which moved a number. Two more surfaced on the read side: battery-data
 stores the legal entity (`Nissan Motor`) where a passport names the brand

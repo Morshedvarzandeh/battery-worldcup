@@ -10,6 +10,7 @@ from ..materials.bom import BillOfMaterials
 from ..market.types import PriceSet
 from ..money import Money
 from ..packs.models import PackModel
+from .aging import AgingAssessment
 
 
 class Pathway(str, Enum):
@@ -200,6 +201,9 @@ class ResidualValuation:
     pack_model: PackModel | None = None
     health_source: str = "measured"
     """Which evidence the state-of-health figure came from. See HealthSource."""
+
+    aging: AgingAssessment | None = None
+    """How this pack compares with others of its model, and what is left of it."""
 
     value_range: ValuationRange | None = None
     sensitivity: list[SensitivityFactor] = field(default_factory=list)

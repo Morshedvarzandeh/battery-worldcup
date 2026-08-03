@@ -61,6 +61,19 @@ _STYLE = """
   li { margin-bottom: 7px; }
   .note { border: 1px solid #e9dcb0; background: #fdf7e6; border-radius: 7px;
           padding: 11px 14px; margin-bottom: 8px; font-size: 0.88rem; }
+  .wear { border: 1px solid #dee2e7; border-radius: 8px; padding: 16px 18px; }
+  .chip { display: inline-block; padding: 3px 10px; border-radius: 999px;
+          font-size: 0.76rem; font-weight: 640; letter-spacing: 0.02em;
+          border: 1px solid; }
+  .chip.good { color: #0b6b4f; border-color: #b8dccd; background: #eef7f3; }
+  .chip.fair { color: #7a5b12; border-color: #e9dcb0; background: #fdf7e6; }
+  .chip.weak { color: #a3352c; border-color: #eccac5; background: #fdf3f2; }
+  .wear p { margin: 11px 0 0; }
+  .wear .outlook { font-weight: 560; }
+  .chart { width: 100%; height: auto; margin-top: 14px; display: block; }
+  .legend { color: #6b7480; font-size: 0.78rem; margin-top: 6px; }
+  .legend .key { display: inline-block; width: 22px; height: 0; margin-right: 5px;
+                 vertical-align: middle; border-top: 2px solid; }
   footer { margin-top: 34px; padding-top: 16px; border-top: 1px solid #e6e9ed;
            color: #6b7480; font-size: 0.82rem; }
   @media print {
@@ -157,6 +170,12 @@ def build_html_report(
         parts.extend(f"<li>{_e(reason)}</li>" for reason in plain["why"])
         parts.append("</ul>")
 
+    # --- how it is wearing ------------------------------------------------
+    aging = payload.get("aging")
+    if aging:
+        parts.append("<h2>How it is wearing</h2>")
+        parts.append(_wear_section(aging))
+
     # --- options ----------------------------------------------------------
     parts.append("<h2>Every option</h2><table>")
     parts.append("<tr><th>What you could do</th><th class='num'>Worth</th></tr>")
@@ -199,6 +218,125 @@ def build_html_report(
         "</footer></body></html>"
     )
     return "\n".join(parts)
+
+
+def _wear_section(aging: dict[str, Any]) -> str:
+    """How the battery is ageing, with a chart of where it is heading."""
+    parts = [
+        '<div class="wear">',
+        f'<span class="chip {_e(aging.get("tone", "fair"))}">'
+        f'{_e(aging.get("verdict_label", ""))}</span>',
+        f'<p>{_e(aging.get("headline", ""))}</p>',
+        f'<p class="outlook">{_e(aging.get("outlook", ""))}</p>',
+    ]
+
+    chart = _wear_chart(aging)
+    if chart:
+        parts.append(chart)
+
+    if aging.get("notes"):
+        parts.append("<ul class='detail' style='margin-top:14px'>")
+        parts.extend(f"<li>{_e(note)}</li>" for note in aging["notes"])
+        parts.append("</ul>")
+
+    parts.append("</div>")
+    return "\n".join(parts)
+
+
+def _wear_chart(aging: dict[str, Any]) -> str:
+    """An inline SVG of health over time, against the floors that cost money.
+
+    Drawn as SVG rather than an image so the report stays one self-contained
+    file that survives being emailed, and stays legible when printed.
+    """
+    points = aging.get("trajectory") or []
+    if len(points) < 2:
+        return ""
+
+    width, height = 600.0, 190.0
+    left, right, top, bottom = 34.0, 8.0, 12.0, 26.0
+    plot_w = width - left - right
+    plot_h = height - top - bottom
+
+    ages = [float(point["age_years"]) for point in points]
+    x_min, x_max = min(ages), max(ages)
+    x_span = (x_max - x_min) or 1.0
+    y_min, y_max = 0.4, 1.0
+
+    def x_of(age: float) -> float:
+        return left + (age - x_min) / x_span * plot_w
+
+    def y_of(soh: float) -> float:
+        clamped = min(max(soh, y_min), y_max)
+        return top + (y_max - clamped) / (y_max - y_min) * plot_h
+
+    def path(key: str) -> str:
+        return " ".join(
+            f"{'M' if index == 0 else 'L'}{x_of(float(point['age_years'])):.1f},"
+            f"{y_of(float(point[key])):.1f}"
+            for index, point in enumerate(points)
+        )
+
+    svg = [
+        f'<svg class="chart" viewBox="0 0 {width:.0f} {height:.0f}" '
+        'role="img" aria-label="Projected battery health over the next ten years">'
+    ]
+
+    for value, label in ((1.0, "100%"), (0.8, "80%"), (0.6, "60%"), (0.4, "40%")):
+        y = y_of(value)
+        svg.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{width - right}" y2="{y:.1f}" '
+            'stroke="#e6e9ed" stroke-width="1"/>'
+        )
+        svg.append(
+            f'<text x="{left - 6}" y="{y + 3.5:.1f}" text-anchor="end" '
+            f'font-size="10" fill="#8b939c">{label}</text>'
+        )
+
+    for key, colour, label in (
+        ("resale_floor", "#a3352c", "resale grade"),
+        ("storage_floor", "#b8860b", "storage grade"),
+    ):
+        floor = aging.get(key)
+        if floor is None:
+            continue
+        y = y_of(float(floor))
+        svg.append(
+            f'<line x1="{left}" y1="{y:.1f}" x2="{width - right}" y2="{y:.1f}" '
+            f'stroke="{colour}" stroke-width="1" stroke-dasharray="3 3" opacity="0.7"/>'
+        )
+        svg.append(
+            f'<text x="{width - right - 2}" y="{y - 4:.1f}" text-anchor="end" '
+            f'font-size="9.5" fill="{colour}">{label}</text>'
+        )
+
+    svg.append(
+        f'<path d="{path("cohort_soh")}" fill="none" stroke="#9aa3ad" '
+        'stroke-width="1.6" stroke-dasharray="5 4"/>'
+    )
+    svg.append(
+        f'<path d="{path("projected_soh")}" fill="none" stroke="#0b6b4f" '
+        'stroke-width="2.4" stroke-linejoin="round"/>'
+    )
+    svg.append(
+        f'<circle cx="{x_of(ages[0]):.1f}" cy="'
+        f'{y_of(float(points[0]["projected_soh"])):.1f}" r="3.5" fill="#0b6b4f"/>'
+    )
+
+    for age in (ages[0], ages[len(ages) // 2], ages[-1]):
+        svg.append(
+            f'<text x="{x_of(age):.1f}" y="{height - 8:.0f}" text-anchor="middle" '
+            f'font-size="10" fill="#8b939c">{age:.0f} yr</text>'
+        )
+
+    svg.append("</svg>")
+    svg.append(
+        '<p class="legend">'
+        '<span class="key" style="border-color:#0b6b4f"></span>this battery '
+        '&nbsp; <span class="key" style="border-color:#9aa3ad"></span>'
+        "a typical one of the same model</p>"
+    )
+    return "\n".join(svg)
 
 
 def _technical_section(payload: dict[str, Any]) -> str:

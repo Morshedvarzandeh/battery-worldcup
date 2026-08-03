@@ -86,7 +86,22 @@ SOURCES = [
         "Used module and component values from second-hand marketplace "
         "listings. A thin market, so treat as indicative and refresh often.",
     ),
+    (
+        "src/bv-degradation-profiles",
+        "dataset",
+        "battery-value pack degradation profiles",
+        "https://github.com/Morshedvarzandeh/battery-worldcup",
+        "Fade curves per pack model, calibrated against published fleet "
+        "telemetry studies, OEM warranty floors and aggregated owner-reported "
+        "capacity readings. Cohort central estimates with an explicit spread; "
+        "they describe a population and never an individual pack.",
+    ),
 ]
+
+# The categorical confidence used across the battery-value datasets, mapped to
+# battery-data's numeric column. Read back by the same thresholds, so a profile
+# survives the round trip unchanged.
+CONFIDENCE_NUMERIC = {"high": 0.85, "medium": 0.65, "low": 0.45}
 
 # Which components of a pack are products in their own right. An enclosure
 # is not something anyone sells; a module, a BMS and an HV box are.
@@ -226,6 +241,7 @@ def emit_sources_and_provenance() -> None:
         "src/eu-2023-1542-annex-xii": ("literature_reported", 1.00),
         "src/bv-recycling-terms": ("estimated", 0.70),
         "src/bv-used-parts-market": ("estimated", 0.60),
+        "src/bv-degradation-profiles": ("literature_reported", 0.70),
     }
     for uid, (evidence_class, confidence) in evidence.items():
         emit(
@@ -426,6 +442,124 @@ def emit_assumptions(recovery: dict) -> None:
         "       valid_from, region, provenance_id) VALUES"
     )
     emit(",\n".join(rows) + ";")
+    emit()
+
+
+def emit_degradation(degradation: dict) -> None:
+    """Fade curves, per pack model and per chemistry.
+
+    The dataset's defaults are written out as valuation_assumption rows rather
+    than being baked into every profile, so a database that adjusts one of them
+    moves every curve at once -- which is what a default is for.
+    """
+    emit("-- " + "-" * 69)
+    emit("-- Degradation profiles: how fast each pack model wears out.")
+    emit("--")
+    emit("-- fade_at_8y already contains the cycling a typical car of this")
+    emit("-- model does, which is what reference_km_per_year records. A")
+    emit("-- consumer that adds a full cycle term on top would bill the same")
+    emit("-- kilometres twice.")
+    emit("-- " + "-" * 69)
+
+    defaults = degradation["defaults"]
+    catalogue = {model.key: model for model in load_catalogue().models}
+
+    entries = [
+        (f"degradation.{key}", value)
+        for key, value in defaults.items()
+        if isinstance(value, (int, float))
+    ]
+    entries += [
+        (f"climate_factor.{name}", value)
+        for name, value in degradation["climate_factors"].items()
+    ]
+    entries += [
+        (f"climate_sensitivity.{name}", value)
+        for name, value in degradation["climate_sensitivity_weights"].items()
+    ]
+    rows = [
+        f"  ({q(key)},{value},'fraction',{q(VALID_FROM)},'EU',\n"
+        f"   {prov_ref('src/bv-degradation-profiles')})"
+        for key, value in entries
+    ]
+    emit(
+        "INSERT INTO valuation_assumption (key, value_num, unit,\n"
+        "       valid_from, region, provenance_id) VALUES"
+    )
+    emit(",\n".join(rows) + ";")
+    emit()
+
+    def columns(entry: dict) -> tuple[str, str]:
+        """Optional columns present in this entry, as ``(names, values)``."""
+        optional = [
+            ("cycle_life_to_80pct", entry.get("cycle_life_to_80pct")),
+            ("reference_km_per_year", entry.get("reference_km_per_year")),
+            ("km_per_kwh", entry.get("km_per_kwh")),
+            ("calendar_exponent", entry.get("calendar_exponent")),
+            ("knee_onset_soh", entry.get("knee_onset_soh")),
+            ("knee_acceleration", entry.get("knee_acceleration")),
+            ("spread_points_at_8y", entry.get("spread_points_at_8y")),
+        ]
+        present = [(name, value) for name, value in optional if value is not None]
+        names = "".join(f", {name}" for name, _ in present)
+        values = "".join(f", {value}" for _, value in present)
+        return names, values
+
+    for entry in degradation["profiles"]:
+        model = catalogue.get(entry["pack_model"])
+        if model is None:
+            print(
+                f"-- SKIPPED degradation profile {entry['pack_model']}: "
+                "not in the pack catalogue",
+                file=sys.stderr,
+            )
+            continue
+        org_uid = ORGANISATIONS.get(model.manufacturer, (None,))[0]
+        if org_uid is None:
+            continue
+
+        pack_uid = f"pack/{slug(model.manufacturer)}/{model.key}"
+        names, values = columns(entry)
+        confidence = CONFIDENCE_NUMERIC.get(
+            entry.get("confidence", defaults.get("confidence", "low")), 0.45
+        )
+        emit(
+            "INSERT INTO degradation_profile (product_id, thermal_management,\n"
+            "       fade_at_8y, climate_sensitivity, confidence, basis, notes,\n"
+            f"       valid_from, region, provenance_id{names})\n"
+            f"SELECT p.id,{q(entry.get('thermal_management', 'unknown'))}::"
+            "thermal_management,\n"
+            f"       {entry['fade_at_8y']},"
+            f"{q(entry.get('climate_sensitivity', defaults['climate_sensitivity']))},"
+            f"{confidence},\n"
+            f"       {q(entry.get('basis') or None)},{q(entry.get('notes') or None)},\n"
+            f"       {q(VALID_FROM)},'EU',{prov_ref('src/bv-degradation-profiles')}"
+            f"{values}\n"
+            f"  FROM product p WHERE p.uid={q(pack_uid)}\n"
+            "ON CONFLICT DO NOTHING;"
+        )
+
+    emit()
+    emit("-- Chemistry fallbacks, for packs the catalogue does not recognise.")
+    for entry in degradation["fallback_by_chemistry"]:
+        names, values = columns(entry)
+        confidence = CONFIDENCE_NUMERIC.get(
+            entry.get("confidence", defaults.get("confidence", "low")), 0.45
+        )
+        emit(
+            "INSERT INTO degradation_profile (chemistry, thermal_management,\n"
+            "       fade_at_8y, climate_sensitivity, confidence, basis, notes,\n"
+            f"       valid_from, region, provenance_id{names})\n"
+            f"VALUES ({q(entry['chemistry'])},"
+            f"{q(entry.get('thermal_management', 'unknown'))}::thermal_management,\n"
+            f"        {entry['fade_at_8y']},"
+            f"{q(entry.get('climate_sensitivity', defaults['climate_sensitivity']))},"
+            f"{confidence},\n"
+            f"        {q(entry.get('basis') or None)},{q(entry.get('notes') or None)},\n"
+            f"        {q(VALID_FROM)},'EU',"
+            f"{prov_ref('src/bv-degradation-profiles')}{values})\n"
+            "ON CONFLICT DO NOTHING;"
+        )
     emit()
 
 
@@ -638,6 +772,7 @@ def emit_packs() -> None:
 
 def main() -> int:
     recovery = json.loads((DATA / "recovery.json").read_text(encoding="utf-8"))
+    degradation = json.loads((DATA / "degradation.json").read_text(encoding="utf-8"))
 
     header()
     emit_organisations()
@@ -646,6 +781,7 @@ def main() -> int:
     emit_recovery(recovery)
     emit_assumptions(recovery)
     emit_packs()
+    emit_degradation(degradation)
 
     emit("-- " + "-" * 69)
     emit(f"-- Generated {date.today().isoformat()} from battery-value data files.")

@@ -57,6 +57,59 @@ def pathway_to_dict(
     }
 
 
+def aging_to_dict(valuation: ResidualValuation) -> dict[str, Any] | None:
+    """Serialise the wear assessment, prose included.
+
+    The wording travels with the numbers so a stored record reads the same
+    months later, and so a partner app does not have to reinvent how to phrase
+    "your battery is wearing out faster than most".
+    """
+    aging = valuation.aging
+    if aging is None:
+        return None
+
+    return {
+        "verdict": aging.verdict.value,
+        "verdict_label": aging.verdict.label,
+        "tone": aging.verdict.tone,
+        "headline": plain.aging_headline(aging),
+        "outlook": plain.aging_outlook(aging),
+        "notes": plain.aging_notes(aging),
+        "comparable": aging.is_comparable,
+        "age_years": aging.age_years,
+        "observed_soh": aging.observed_soh,
+        "expected_soh": aging.expected_soh,
+        "deviation_points": aging.deviation_points,
+        "spread_points": aging.spread_points,
+        "fade_ratio": aging.fade_ratio,
+        "annual_fade_ahead_points": aging.annual_fade_ahead,
+        "years_to_resale_floor": aging.years_to_resale_floor,
+        "years_to_storage_floor": aging.years_to_storage_floor,
+        "already_below_resale_floor": aging.already_below_resale_floor,
+        "already_below_storage_floor": aging.already_below_storage_floor,
+        "resale_floor": aging.resale_floor,
+        "storage_floor": aging.storage_floor,
+        "cycles_used": aging.cycles_used,
+        "cycles_expected": aging.cycles_expected,
+        "climate": aging.climate,
+        "thermal_management": aging.thermal_management,
+        "confidence": aging.confidence,
+        "profile": {
+            "key": aging.profile_key,
+            "label": aging.profile_label,
+            "model_specific": aging.is_model_specific,
+        },
+        "trajectory": [
+            {
+                "age_years": point.age_years,
+                "projected_soh": point.projected_soh,
+                "cohort_soh": point.cohort_soh,
+            }
+            for point in aging.trajectory
+        ],
+    }
+
+
 def plain_language_block(valuation: ResidualValuation) -> dict[str, Any]:
     """Everything the end-user view needs, already written as prose.
 
@@ -103,6 +156,7 @@ def valuation_to_dict(valuation: ResidualValuation) -> dict[str, Any]:
                 else None
             ),
         },
+        "aging": aging_to_dict(valuation),
         "residual_value": money_to_dict(valuation.residual_value),
         "value_per_kwh": money_to_dict(valuation.value_per_kwh),
         "recommended_pathway": recommended.pathway.value if recommended else None,

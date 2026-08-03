@@ -112,6 +112,14 @@
   .band.weak { background: var(--negative-soft); color: var(--negative); }
   .band-note { color: var(--muted); font-size: 0.9rem; margin: 10px auto 0; max-width: 52ch; }
 
+  /* --- wear --- */
+  .wear-outlook { font-weight: 560; margin: 10px 0 0; }
+  .wear-chart { width: 100%; height: auto; margin-top: 16px; display: block; }
+  .wear-legend { color: var(--muted); font-size: 0.8rem; margin-top: 8px;
+                 display: flex; gap: 16px; flex-wrap: wrap; }
+  .wear-legend i { display: inline-block; width: 20px; height: 0; margin-right: 6px;
+                   vertical-align: middle; border-top: 2px solid; }
+
   .facts { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
   .fact {
     font-size: 0.84rem; padding: 5px 12px; border-radius: 999px;
@@ -578,6 +586,94 @@ function renderAnswer(data) {
   return html;
 }
 
+// The health figure on its own is a number without a yardstick. Held against
+// the pack's own model it becomes the two things the owner can act on: whether
+// their battery is doing better or worse than others like it, and roughly when
+// it stops being worth anything to a buyer.
+function renderWear(data) {
+  const wear = data.aging;
+  if (!wear) return "";
+
+  let html = '<div class="card"><h2>How it is wearing</h2>';
+  html += '<div><span class="band ' + esc(wear.tone) + '">'
+        + esc(wear.verdict_label) + "</span></div>";
+  html += '<p class="band-note" style="margin-left:0;max-width:none">'
+        + esc(wear.headline) + "</p>";
+  html += '<p class="wear-outlook">' + esc(wear.outlook) + "</p>";
+  html += wearChart(wear);
+
+  if (wear.notes && wear.notes.length) {
+    html += '<ul class="plain" style="margin-top:16px">';
+    for (const note of wear.notes) html += "<li>" + esc(note) + "</li>";
+    html += "</ul>";
+  }
+  return html + "</div>";
+}
+
+function wearChart(wear) {
+  const points = wear.trajectory || [];
+  if (points.length < 2) return "";
+
+  const W = 600, H = 190, L = 34, R = 8, T = 12, B = 26;
+  const plotW = W - L - R, plotH = H - T - B;
+  const ages = points.map((p) => p.age_years);
+  const xMin = Math.min(...ages), xMax = Math.max(...ages);
+  const xSpan = (xMax - xMin) || 1;
+  const yMin = 0.4, yMax = 1.0;
+
+  const xOf = (age) => L + ((age - xMin) / xSpan) * plotW;
+  const yOf = (soh) => T + ((yMax - Math.min(Math.max(soh, yMin), yMax))
+                            / (yMax - yMin)) * plotH;
+  const path = (key) => points
+    .map((p, i) => (i ? "L" : "M") + xOf(p.age_years).toFixed(1) + ","
+                 + yOf(p[key]).toFixed(1))
+    .join(" ");
+
+  let svg = '<svg class="wear-chart" viewBox="0 0 ' + W + " " + H + '" role="img"'
+          + ' aria-label="Projected battery health over the next ten years">';
+
+  for (const [value, label] of [[1, "100%"], [0.8, "80%"], [0.6, "60%"], [0.4, "40%"]]) {
+    const y = yOf(value).toFixed(1);
+    svg += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y
+         + '" stroke="currentColor" stroke-width="1" opacity="0.13"/>'
+         + '<text x="' + (L - 6) + '" y="' + (yOf(value) + 3.5).toFixed(1)
+         + '" text-anchor="end" font-size="10" fill="currentColor" opacity="0.55">'
+         + label + "</text>";
+  }
+
+  for (const [key, colour, label] of [["resale_floor", "var(--negative)", "resale grade"],
+                                      ["storage_floor", "#b8860b", "storage grade"]]) {
+    if (wear[key] == null) continue;
+    const y = yOf(wear[key]);
+    svg += '<line x1="' + L + '" y1="' + y.toFixed(1) + '" x2="' + (W - R)
+         + '" y2="' + y.toFixed(1) + '" stroke="' + colour + '" stroke-width="1"'
+         + ' stroke-dasharray="3 3" opacity="0.75"/>'
+         + '<text x="' + (W - R - 2) + '" y="' + (y - 4).toFixed(1)
+         + '" text-anchor="end" font-size="9.5" fill="' + colour + '">'
+         + label + "</text>";
+  }
+
+  svg += '<path d="' + path("cohort_soh") + '" fill="none" stroke="currentColor"'
+       + ' opacity="0.4" stroke-width="1.6" stroke-dasharray="5 4"/>';
+  svg += '<path d="' + path("projected_soh") + '" fill="none"'
+       + ' stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round"/>';
+  svg += '<circle cx="' + xOf(ages[0]).toFixed(1) + '" cy="'
+       + yOf(points[0].projected_soh).toFixed(1)
+       + '" r="3.5" fill="var(--accent)"/>';
+
+  for (const age of [ages[0], ages[Math.floor(ages.length / 2)], ages[ages.length - 1]]) {
+    svg += '<text x="' + xOf(age).toFixed(1) + '" y="' + (H - 8)
+         + '" text-anchor="middle" font-size="10" fill="currentColor"'
+         + ' opacity="0.55">' + Math.round(age) + " yr</text>";
+  }
+
+  return svg + "</svg>"
+    + '<div class="wear-legend">'
+    + '<span><i style="border-color:var(--accent)"></i>this battery</span>'
+    + '<span><i style="border-color:currentColor;opacity:0.6"></i>'
+    + "a typical one of the same model</span></div>";
+}
+
 function renderActions(data) {
   let html = '<div class="card"><h2>Keep a copy</h2>';
 
@@ -725,6 +821,7 @@ function renderTechnical(data) {
 function render(data) {
   const result = $("result");
   result.innerHTML = renderAnswer(data)
+                   + renderWear(data)
                    + renderOptions(data)
                    + renderWhy(data)
                    + renderActions(data)

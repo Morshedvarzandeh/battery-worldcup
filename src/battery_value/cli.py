@@ -16,6 +16,8 @@ from .passport.resolver import PassportResolver
 from .report import build_html_report, report_filename
 from .serialisation import passport_to_dict, valuation_to_dict
 from .store import ValuationStore, default_store, normalise_reference
+from .materials.degradation import CLIMATES, DEFAULT_CLIMATE
+from .valuation import plain
 from .valuation.config import ValuationConfig
 from .valuation.engine import ValuationEngine
 from .valuation.models import ResidualValuation
@@ -74,6 +76,30 @@ def _render_valuation(valuation: ResidualValuation) -> str:
         add(f"  range            {valuation.value_range.describe()}")
         add(f"  main driver      {valuation.value_range.driver}")
     add("")
+
+    aging = valuation.aging
+    if aging is not None:
+        add(f"  WEAR ({aging.verdict.label.lower()})")
+        add(f"    {plain.aging_headline(aging)}")
+        add(f"    {plain.aging_outlook(aging)}")
+        if aging.is_comparable:
+            add(
+                f"    measured {aging.observed_soh:.1%} vs "
+                f"{aging.expected_soh:.1%} typical "
+                f"(+/-{aging.spread_points:.1f} points across the model), "
+                f"fading at {aging.fade_ratio:.2f}x the usual rate"
+            )
+        if aging.cycles_used and aging.cycles_expected:
+            add(
+                f"    {aging.cycles_used:,} cycles against "
+                f"{aging.cycles_expected:,.0f} typical for its age"
+            )
+        add(
+            f"    curve: {aging.profile_label}"
+            + ("" if aging.is_model_specific else " (chemistry fallback)")
+            + f", {aging.climate} climate"
+        )
+        add("")
 
     add("  PATHWAYS")
     for pathway in valuation.pathways:
@@ -142,7 +168,9 @@ def cmd_value(args: argparse.Namespace) -> int:
     """Value a battery pack."""
     passport = _load_passport(args)
     engine = _build_engine(args)
-    valuation = engine.value(passport)
+    valuation = engine.value(
+        passport, climate=getattr(args, "climate", DEFAULT_CLIMATE)
+    )
 
     payload = valuation_to_dict(valuation)
     store = ValuationStore(enabled=not args.no_store)
@@ -525,6 +553,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     value_parser.add_argument(
         "--quiet", action="store_true", help="suppress the terminal report"
+    )
+    value_parser.add_argument(
+        "--climate",
+        choices=CLIMATES,
+        default=DEFAULT_CLIMATE,
+        help=(
+            "where the pack has spent its life. Heat is the main thing that "
+            "separates two otherwise identical batteries, so set it when it is "
+            "genuinely known"
+        ),
     )
     value_parser.set_defaults(func=cmd_value)
 

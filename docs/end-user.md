@@ -10,11 +10,13 @@ So the default view answers exactly that, and everything else is folded away.
 1. **One number**, large, with a sentence saying what it means and what to do.
 2. **A confidence badge in words** — "Good estimate", "Rough estimate" — not a
    percentage they have to interpret.
-3. **All four routes**, named for what actually happens to the battery, with a
+3. **How it is wearing** — whether the battery is holding up better or worse
+   than others of the same model, and how long it stays worth selling.
+4. **All four routes**, named for what actually happens to the battery, with a
    plain reason attached to each one that is not available.
-4. **Why this number** — two or three sentences, no jargon.
-5. **Keep a copy** — share or save the report.
-6. **Show the technical detail** — one toggle, closed by default.
+5. **Why this number** — two or three sentences, no jargon.
+6. **Keep a copy** — share or save the report.
+7. **Show the technical detail** — one toggle, closed by default.
 
 The wording lives in `battery_value.valuation.plain` and is served in the
 `plain` block of every `/v1/value` response, so a partner app or a chatbot
@@ -32,6 +34,14 @@ plain.chemistry_in_plain_words(chemistry)             # "Nickel-manganese-cobalt
 plain.health_in_plain_words(0.81)                     # "in good shape for its age"
 plain.why_this_value(valuation)                       # 2-3 plain sentences
 plain.how_to_improve(valuation)                       # what would sharpen it
+
+plain.aging_headline(valuation.aging)
+# "Yours is at 81% after about 7 years, and most batteries like it are
+#  around 75%. That is normal wear."
+plain.aging_outlook(valuation.aging)
+# "At this rate it stays good enough to sell as a working battery for
+#  about 4 years."
+plain.aging_notes(valuation.aging)                    # what explains the wear
 ```
 
 ### Language rules
@@ -44,8 +54,12 @@ plain.how_to_improve(valuation)                       # what would sharpen it
   is worth"*, not *"−€814"*.
 - Say why a route is closed in terms the owner can act on: *"Its health is 64%.
   Buyers want at least 75% before fitting a used battery to a vehicle."*
+- Never claim to know how a battery compares when it was never measured. Health
+  worked out from age or mileage says *"we could not check yours against that
+  without a capacity reading"*, rather than quietly reporting it as typical.
 
-Those rules are enforced by tests in `tests/test_plain_and_report.py`.
+Those rules are enforced by tests in `tests/test_plain_and_report.py` and
+`tests/test_aging.py`.
 
 ## Photographing the code
 

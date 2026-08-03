@@ -1,0 +1,379 @@
+{
+  "schema_version": 1,
+  "updated": "2026-08-03",
+  "notes": [
+    "How fast a pack loses capacity, per pack model rather than per chemistry. Cooling design and cell format drive far more of the spread between real fleets than cathode chemistry does: two NMC packs of the same vintage age quite differently if one is liquid-cooled and the other is not.",
+    "fade_at_8y is total capacity lost after eight years by a pack of this model driven at reference_km_per_year in a temperate climate. It already includes the cycling such a car does, which is why cycle_life only applies to the DIFFERENCE between a pack's actual cycle count and that reference. Adding a full cycle term on top would count the same wear twice.",
+    "calendar_exponent of 0.5 makes fade go with the square root of time. That is the shape field data shows and the shape SEI growth predicts: a visible drop in the first year, then a long flattening. A straight line fits neither end.",
+    "knee_onset_soh and knee_acceleration steepen the curve near the end of life, where lithium plating and lost active material start to compound. The acceleration is deliberately mild: fade_at_8y is calibrated on real packs that were already ageing this way, so a sharp knee on top of it would charge them twice for the same mechanism.",
+    "spread_points_at_8y is one standard deviation in state-of-health points at eight years, across packs of the same model and age. It is what makes 'your pack is ageing faster than most' a statement rather than an impression, and it is wide on purpose: real fleets of one model differ by more than most single-number claims admit.",
+    "These are cohort central estimates calibrated against published fleet-telemetry studies, OEM warranty floors and aggregated owner-reported capacity readings. They describe a population, never an individual pack. A measured state of health always outranks anything here.",
+    "Everything in this file can be overridden from battery-data, where the same figures carry provenance and validity windows. See docs/aging.md."
+  ],
+  "sources": [
+    "Published EV fleet-telemetry degradation studies (aggregated, multi-model)",
+    "OEM traction-battery warranty floors (typically 70% at 8 years / 160,000 km)",
+    "Aggregated owner-reported capacity readings from model-specific communities",
+    "EU Battery Regulation 2023/1542 Annex XIII, which makes cycle count and remaining capacity passport fields"
+  ],
+  "defaults": {
+    "reference_km_per_year": 13500,
+    "km_per_kwh": 5.5,
+    "calendar_exponent": 0.5,
+    "knee_onset_soh": 0.68,
+    "knee_acceleration": 1.35,
+    "spread_points_at_8y": 5.0,
+    "climate_sensitivity": "medium",
+    "confidence": "low"
+  },
+  "climate_factors": {
+    "cool": 0.82,
+    "temperate": 1.0,
+    "warm": 1.25,
+    "hot": 1.55
+  },
+  "climate_sensitivity_weights": {
+    "low": 0.5,
+    "medium": 1.0,
+    "high": 1.4
+  },
+  "profiles": [
+    {
+      "pack_model": "nissan-leaf-ze0-24",
+      "thermal_management": "passive",
+      "fade_at_8y": 0.28,
+      "cycle_life_to_80pct": 1200,
+      "reference_km_per_year": 9000,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 7.0,
+      "confidence": "high",
+      "basis": "large owner-reported dataset, plus the well-documented hot-climate failures",
+      "notes": "No cooling at all, and a manganese-spinel cathode that dislikes heat. The fastest-ageing mainstream EV pack ever sold, and the reason every maker since has cooled its packs."
+    },
+    {
+      "pack_model": "nissan-leaf-ze1-40",
+      "thermal_management": "passive",
+      "fade_at_8y": 0.19,
+      "cycle_life_to_80pct": 1500,
+      "reference_km_per_year": 11000,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 6.0,
+      "confidence": "high",
+      "basis": "owner-reported capacity readings and fleet telemetry",
+      "notes": "Still passively cooled, but a better cathode. Rapid-charges badly in summer, so a pack used mainly on DC fast chargers ages well ahead of this curve."
+    },
+    {
+      "pack_model": "nissan-leaf-ze1-62",
+      "thermal_management": "passive",
+      "fade_at_8y": 0.16,
+      "cycle_life_to_80pct": 1600,
+      "reference_km_per_year": 13000,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 5.5,
+      "confidence": "medium",
+      "basis": "owner-reported readings; fewer years in service than the 40 kWh",
+      "notes": "The bigger pack runs each cell gentler for the same journey, which offsets some of the missing cooling."
+    },
+    {
+      "pack_model": "renault-zoe-ze40",
+      "thermal_management": "air",
+      "fade_at_8y": 0.17,
+      "cycle_life_to_80pct": 1600,
+      "reference_km_per_year": 11000,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 5.0,
+      "confidence": "medium",
+      "basis": "fleet telemetry and leasing-company return data",
+      "notes": "Air cooling and a low charge rate for most of its life. Many were battery-leased, so their capacity was tracked and weak packs replaced."
+    },
+    {
+      "pack_model": "renault-zoe-ze50",
+      "thermal_management": "air",
+      "fade_at_8y": 0.15,
+      "cycle_life_to_80pct": 1700,
+      "reference_km_per_year": 12000,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.5,
+      "confidence": "medium",
+      "basis": "fleet telemetry",
+      "notes": ""
+    },
+    {
+      "pack_model": "bmw-i3-60ah",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.15,
+      "cycle_life_to_80pct": 1600,
+      "reference_km_per_year": 9500,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0,
+      "confidence": "high",
+      "basis": "long service history with refrigerant cooling from new",
+      "notes": "Directly refrigerant-cooled, so climate barely moves it. The small pack is worked hard per kilometre, which is what keeps this above the later cars."
+    },
+    {
+      "pack_model": "bmw-i3-94ah",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.13,
+      "cycle_life_to_80pct": 1800,
+      "reference_km_per_year": 10500,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 3.5,
+      "confidence": "high",
+      "basis": "long service history; capacity readings widely published by owners",
+      "notes": ""
+    },
+    {
+      "pack_model": "bmw-i3-120ah",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 11000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 3.5,
+      "confidence": "high",
+      "basis": "service history and owner-reported readings",
+      "notes": "One of the best-ageing packs of its generation."
+    },
+    {
+      "pack_model": "tesla-model3-lr",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.11,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 18000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 3.5,
+      "confidence": "high",
+      "basis": "manufacturer fleet reporting and large owner-telemetry datasets",
+      "notes": "Loses most of its first few percent quickly, then flattens hard. High annual mileage is normal for this car, and the reference reflects that."
+    },
+    {
+      "pack_model": "tesla-model3-lfp",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 3500,
+      "reference_km_per_year": 16000,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 3.5,
+      "confidence": "medium",
+      "basis": "owner telemetry; fewer years in service",
+      "notes": "Charged to 100% routinely by design, which costs a little calendar life but the cell tolerates cycling far better. High-mileage examples age much better than the nickel packs."
+    },
+    {
+      "pack_model": "tesla-models-85",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.13,
+      "cycle_life_to_80pct": 1800,
+      "reference_km_per_year": 17000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.5,
+      "confidence": "high",
+      "basis": "very long service history across a large owner-reported dataset",
+      "notes": "The oldest large fleet on record, and the clearest demonstration of the flattening curve: most of the loss happens in the first three years."
+    },
+    {
+      "pack_model": "vw-id3-58",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.13,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 13500,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0,
+      "confidence": "medium",
+      "basis": "warranty floor plus early fleet telemetry",
+      "notes": ""
+    },
+    {
+      "pack_model": "vw-id4-77",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 15000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0,
+      "confidence": "medium",
+      "basis": "warranty floor plus early fleet telemetry",
+      "notes": ""
+    },
+    {
+      "pack_model": "hyundai-kona-64",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.11,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 14000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 3.5,
+      "confidence": "high",
+      "basis": "fleet telemetry across several years and climates",
+      "notes": "Consistently one of the slowest-ageing packs measured."
+    },
+    {
+      "pack_model": "byd-atto3-60",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 4000,
+      "reference_km_per_year": 14000,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.0,
+      "confidence": "low",
+      "basis": "manufacturer cycle-life claims; too few years in service to verify calendar fade",
+      "notes": "The cell outlasts the car on cycles. What limits this pack is calendar time, not use, so mileage barely moves it."
+    },
+    {
+      "pack_model": "psa-emp1-50",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.14,
+      "cycle_life_to_80pct": 1800,
+      "reference_km_per_year": 12000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.5,
+      "confidence": "medium",
+      "basis": "warranty floor plus fleet telemetry",
+      "notes": ""
+    },
+    {
+      "pack_model": "audi-etron-95",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.1,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 16000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 3.0,
+      "confidence": "high",
+      "basis": "fleet telemetry; heavily buffered pack",
+      "notes": "Only about 86% of the pack is ever used. The buffer is expensive in kWh you paid for and never see, and it is why this pack ages so slowly."
+    },
+    {
+      "pack_model": "polestar2-78",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 2000,
+      "reference_km_per_year": 15000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0,
+      "confidence": "medium",
+      "basis": "warranty floor plus fleet telemetry",
+      "notes": ""
+    },
+    {
+      "pack_model": "toyota-prius-xw30-nimh",
+      "thermal_management": "air",
+      "fade_at_8y": 0.2,
+      "cycle_life_to_80pct": 3000,
+      "reference_km_per_year": 15000,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 8.0,
+      "confidence": "medium",
+      "basis": "very long service history; failures are usually one weak module, not even fade",
+      "notes": "A hybrid pack cycles shallowly thousands of times a year, so mileage hardly matters. These rarely fade to death; they fail when one module drifts and the others carry it. Cell imbalance is the number to watch, not capacity."
+    },
+    {
+      "pack_model": "tesla-powerwall2",
+      "thermal_management": "liquid",
+      "fade_at_8y": 0.16,
+      "cycle_life_to_80pct": 3500,
+      "reference_km_per_year": 0,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0,
+      "confidence": "medium",
+      "basis": "manufacturer warranty floor of 70% retention at ten years",
+      "notes": "A stationary product, cycled daily by design. Its cycle count is meaningful where a car's mileage is not, so the reference mileage does not apply."
+    }
+  ],
+  "fallback_by_chemistry": [
+    {
+      "chemistry": "LMO",
+      "fade_at_8y": 0.26,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 7.0,
+      "notes": "Manganese dissolves out of the cathode at temperature. Almost every LMO traction pack was passively cooled."
+    },
+    {
+      "chemistry": "NMC111",
+      "fade_at_8y": 0.15,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 5.0
+    },
+    {
+      "chemistry": "NMC532",
+      "fade_at_8y": 0.15,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 5.0
+    },
+    {
+      "chemistry": "NMC622",
+      "fade_at_8y": 0.14,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.5
+    },
+    {
+      "chemistry": "NMC712",
+      "fade_at_8y": 0.13,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.5
+    },
+    {
+      "chemistry": "NMC811",
+      "fade_at_8y": 0.14,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 5.0,
+      "notes": "More nickel buys energy density at some cost in stability."
+    },
+    {
+      "chemistry": "NCA",
+      "fade_at_8y": 0.13,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 4.0
+    },
+    {
+      "chemistry": "LFP",
+      "fade_at_8y": 0.12,
+      "cycle_life_to_80pct": 3500,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.0,
+      "notes": "Outstanding on cycles, ordinary on calendar time. An LFP pack that sits unused ages much like any other."
+    },
+    {
+      "chemistry": "LMFP",
+      "fade_at_8y": 0.13,
+      "cycle_life_to_80pct": 2800,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 4.5
+    },
+    {
+      "chemistry": "LTO",
+      "fade_at_8y": 0.07,
+      "cycle_life_to_80pct": 15000,
+      "climate_sensitivity": "low",
+      "spread_points_at_8y": 2.5,
+      "notes": "Barely ages. Its problem is energy density and price, never life."
+    },
+    {
+      "chemistry": "LCO",
+      "fade_at_8y": 0.3,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 7.0
+    },
+    {
+      "chemistry": "NA_ION",
+      "fade_at_8y": 0.16,
+      "climate_sensitivity": "medium",
+      "spread_points_at_8y": 6.0,
+      "notes": "Too new for field data. This is an expectation, not an observation."
+    },
+    {
+      "chemistry": "NIMH",
+      "fade_at_8y": 0.2,
+      "cycle_life_to_80pct": 3000,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 8.0
+    },
+    {
+      "chemistry": "LEAD_ACID",
+      "fade_at_8y": 0.45,
+      "cycle_life_to_80pct": 500,
+      "climate_sensitivity": "high",
+      "spread_points_at_8y": 10.0,
+      "notes": "Short-lived by design and cheap to replace, which is why nobody tracks its fade closely."
+    }
+  ]
+}

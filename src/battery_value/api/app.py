@@ -140,7 +140,7 @@ def _value_resolved(passport: BatteryPassport, request: ValueRequest) -> Residua
         engine = _engine(currency, request.offline)
 
     try:
-        return engine.value(passport)
+        return engine.value(passport, climate=request.climate)
     except ValuationError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     except BatteryValueError as exc:
