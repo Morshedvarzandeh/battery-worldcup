@@ -27,6 +27,7 @@ from ..store import ValuationStore, default_store, normalise_reference
 from ..valuation.config import ValuationConfig
 from ..valuation.engine import ValuationEngine
 from ..valuation.models import ResidualValuation
+from .marketplace import pages as market_pages, router as market_router
 from .schemas import HealthResponse, ProvidersResponse, ScanRequest, ValueRequest
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,10 @@ app = FastAPI(
         "against current material and system markets."
     ),
 )
+
+
+app.include_router(market_router)
+app.include_router(market_pages)
 
 
 @lru_cache(maxsize=8)

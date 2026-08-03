@@ -196,6 +196,7 @@ class ValuationEngine:
             currency=self.config.currency,
             pack_model=pack_model,
             health_source=health.source.value,
+            condition=health.condition.value,
             aging=aging,
             warnings=warnings,
             provenance=provenance,

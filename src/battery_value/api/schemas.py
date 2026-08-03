@@ -59,6 +59,52 @@ class ValueRequest(ScanRequest):
     )
 
 
+class ListingRequest(BaseModel):
+    """Put a pack on the market.
+
+    There is no field for state of health, energy or chemistry, and that is
+    deliberate: they come from the valuation, not from the seller.
+    """
+
+    valuation_reference: str = Field(
+        description="Reference of a stored valuation, e.g. BV-7K2P-M4X9."
+    )
+    seller_handle: str = Field(min_length=2, max_length=80)
+    asking_price: float | None = Field(
+        default=None,
+        ge=0,
+        description="Defaults to the guide price derived from the valuation.",
+    )
+    region: str = Field(default="", max_length=80)
+    title: str = Field(default="", max_length=140)
+    description: str = Field(default="", max_length=4000)
+    collection_only: bool = True
+
+
+class RepriceRequest(BaseModel):
+    """Change what a listing asks."""
+
+    asking_price: float = Field(ge=0)
+
+
+class OfferRequest(BaseModel):
+    """Bid on a listing."""
+
+    buyer_handle: str = Field(min_length=2, max_length=80)
+    amount: float = Field(gt=0)
+    message: str = Field(default="", max_length=2000)
+
+
+class SaleRequest(BaseModel):
+    """Record a completed sale."""
+
+    price: float | None = Field(
+        default=None,
+        ge=0,
+        description="Defaults to the accepted offer, or the asking price.",
+    )
+
+
 class ProviderInfo(BaseModel):
     """One entry in a provider chain."""
 

@@ -222,3 +222,6 @@ __marimo__/
 prices/*.csv
 !examples/prices-sample.csv
 *.sqlite3
+
+# Demo stores written by examples/demo_market.py
+.demo/

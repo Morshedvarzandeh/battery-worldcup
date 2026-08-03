@@ -294,6 +294,178 @@ def cmd_prune(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_market(args: argparse.Namespace) -> int:
+    """Browse, sell into, and settle the market."""
+    from .marketplace import MarketError, MarketService
+    from .marketplace.observations import summarise, to_battery_data_sql
+
+    service = MarketService()
+
+    try:
+        if args.market_command == "browse":
+            listings = service.search(
+                query=args.search, chemistry=args.chemistry, limit=args.limit
+            )
+            if args.json:
+                print(json.dumps([listing.to_dict() for listing in listings], indent=2))
+                return 0
+            if not listings:
+                print("nothing listed")
+                return 0
+            print(f"{'reference':<14s}{'battery':<34s}{'asking':>10s}  price")
+            print("-" * 78)
+            for listing in listings:
+                asking = (
+                    "collection"
+                    if listing.kind.value == "disposal"
+                    else f"{listing.asking_price:,.0f}"
+                )
+                print(
+                    f"{listing.reference:<14s}{listing.battery_label[:32]:<34s}"
+                    f"{asking:>10s}  {listing.price_verdict.label}"
+                )
+            print(f"\n{len(listings)} listing(s)")
+            return 0
+
+        if args.market_command == "show":
+            listing = service.get(args.reference)
+            if listing is None:
+                print(f"error: no listing {args.reference}", file=sys.stderr)
+                return 1
+            if args.json:
+                print(json.dumps(listing.to_dict(), indent=2))
+                return 0
+            print(_render_listing(listing))
+            return 0
+
+        if args.market_command == "sell":
+            listing = service.create_listing(
+                args.valuation,
+                seller_handle=args.seller,
+                asking_price=args.price,
+                region=args.region or "",
+                title=args.title or "",
+                description=args.description or "",
+            )
+            print(_render_listing(listing))
+            return 0
+
+        if args.market_command == "offer":
+            offer = service.make_offer(
+                args.reference,
+                buyer_handle=args.buyer,
+                amount=args.amount,
+                message=args.message or "",
+            )
+            print(
+                f"{offer.reference}: offered {offer.amount:,.0f} {offer.currency} "
+                f"on {offer.listing_reference}"
+            )
+            return 0
+
+        if args.market_command == "accept":
+            listing = service.accept_offer(args.reference)
+            print(f"{listing.reference} is now {listing.status.label.lower()}")
+            return 0
+
+        if args.market_command == "sold":
+            listing = service.mark_sold(args.reference, args.price)
+            print(
+                f"{listing.reference} sold for {listing.sold_price:,.0f} "
+                f"{listing.currency}"
+            )
+            return 0
+
+        if args.market_command == "prices":
+            sold = service.market.sold()
+            if args.sql:
+                print(to_battery_data_sql(sold))
+                return 0
+            summary = summarise(sold)
+            if args.json:
+                print(json.dumps(summary, indent=2))
+                return 0
+            if not summary:
+                print(
+                    f"no model has three completed sales yet ({len(sold)} sale(s) "
+                    "recorded). One transaction is an anecdote, not a price."
+                )
+                return 0
+            print(f"{'pack':<34s}{'median/kWh':>12s}{'sales':>7s}  health")
+            print("-" * 70)
+            for entry in summary.values():
+                print(
+                    f"{entry['label'][:32]:<34s}"
+                    f"{entry['median_price_per_kwh']:>12,.1f}"
+                    f"{entry['sample_size']:>7d}  "
+                    f"{entry['min_soh']:.0%}-{entry['max_soh']:.0%}"
+                )
+            return 0
+    except MarketError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    print("error: unknown market command", file=sys.stderr)
+    return 1
+
+
+def _render_listing(listing) -> str:
+    """One listing, with the price shown against its own valuation."""
+    out: list[str] = []
+    add = out.append
+    guide = listing.guide
+
+    add(_RULE)
+    add(f"  {listing.display_title()}")
+    add(_RULE)
+    add(
+        f"  {listing.reference} | {listing.status.label} | "
+        f"from valuation {listing.valuation_reference}"
+    )
+    add(
+        f"  {listing.rated_kwh:g} kWh | {listing.state_of_health:.0%} health "
+        f"({listing.health_source}) | {listing.chemistry}"
+        + (f" | {listing.region}" if listing.region else "")
+    )
+    add("")
+
+    if listing.kind.value == "disposal":
+        add("  DISPOSAL, NOT A SALE")
+    else:
+        add(f"  ASKING           {listing.asking_price:,.0f} {listing.currency}")
+        add(
+            f"  guide            {guide.low:,.0f} - {guide.high:,.0f} "
+            f"(mid {guide.guide:,.0f})"
+        )
+        add(f"  valuation        {listing.estimate:,.0f} {listing.currency} end to end")
+        add(f"  verdict          {listing.price_verdict.label}")
+    add(f"    {listing.price_note}")
+    add("")
+
+    if listing.wear_headline:
+        add("  WEAR")
+        add(f"    {listing.wear_headline}")
+        add("")
+
+    if listing.needs_dangerous_goods_freight:
+        add("  ! Recorded as damaged: ADR special provision 376 applies, which")
+        add("    means a different carrier and a materially higher freight cost.")
+        add("")
+
+    if listing.offers:
+        add("  OFFERS")
+        for offer in listing.offers:
+            add(
+                f"    {offer.reference}  {offer.amount:>9,.0f} {offer.currency}  "
+                f"{offer.status.value:<9s} {offer.buyer_handle}"
+            )
+        add("")
+
+    add(f"  Contact: {listing.seller_handle}")
+    add(_RULE)
+    return "\n".join(out)
+
+
 def _render_stored(record) -> str:
     """Render a stored valuation from its payload."""
     payload = record.payload
@@ -634,6 +806,61 @@ def build_parser() -> argparse.ArgumentParser:
         help="write somewhere other than the bundled catalogue",
     )
     sync_parser.set_defaults(func=cmd_sync)
+
+    market_parser = subparsers.add_parser(
+        "market", help="the marketplace: browse, sell, offer, settle"
+    )
+    market_subs = market_parser.add_subparsers(dest="market_command", required=True)
+
+    browse = market_subs.add_parser("browse", help="what is for sale")
+    browse.add_argument("--search", help="free text over label, title and notes")
+    browse.add_argument("--chemistry", help="filter by cell chemistry")
+    browse.add_argument("--limit", type=int, default=50)
+    browse.add_argument("--json", action="store_true")
+
+    show_listing = market_subs.add_parser("show", help="one listing in full")
+    show_listing.add_argument("reference")
+    show_listing.add_argument("--json", action="store_true")
+
+    sell = market_subs.add_parser(
+        "sell",
+        help="list a pack, from a valuation reference",
+        description=(
+            "A listing can only be created from a valuation, so the buyer sees "
+            "the same independent assessment the seller did."
+        ),
+    )
+    sell.add_argument("valuation", help="valuation reference, e.g. BV-7K2P-M4X9")
+    sell.add_argument("--seller", required=True, help="how buyers reach you")
+    sell.add_argument(
+        "--price", type=float, default=None, help="defaults to the guide price"
+    )
+    sell.add_argument("--region", help="where the pack is, for collection")
+    sell.add_argument("--title")
+    sell.add_argument("--description")
+
+    offer = market_subs.add_parser("offer", help="bid on a listing")
+    offer.add_argument("reference")
+    offer.add_argument("--buyer", required=True)
+    offer.add_argument("--amount", type=float, required=True)
+    offer.add_argument("--message")
+
+    accept = market_subs.add_parser("accept", help="accept an offer")
+    accept.add_argument("reference", help="offer reference, e.g. OF-3QRT-8WBN")
+
+    sold = market_subs.add_parser("sold", help="record a completed sale")
+    sold.add_argument("reference", help="listing reference")
+    sold.add_argument("--price", type=float, default=None)
+
+    prices = market_subs.add_parser("prices", help="what packs actually sold for")
+    prices.add_argument("--json", action="store_true")
+    prices.add_argument(
+        "--sql",
+        action="store_true",
+        help="render as battery-data rows, ready for review",
+    )
+
+    market_parser.set_defaults(func=cmd_market)
 
     serve_parser = subparsers.add_parser("serve", help="run the API and scan UI")
     serve_parser.add_argument("--host", default="127.0.0.1")

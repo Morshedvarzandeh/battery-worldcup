@@ -46,6 +46,18 @@ def isolated_store(tmp_path, monkeypatch):
     store_module.reset_default_store()
 
 
+@pytest.fixture(autouse=True)
+def isolated_market(tmp_path, monkeypatch):
+    """Point the marketplace at a per-test database."""
+    from battery_value.marketplace import store as market_module
+
+    monkeypatch.setenv("BV_MARKET_PATH", str(tmp_path / "market.sqlite3"))
+    monkeypatch.delenv("BV_MARKET_ENABLED", raising=False)
+    market_module.reset_default_market()
+    yield market_module.default_market()
+    market_module.reset_default_market()
+
+
 @pytest.fixture
 def offline_resolver(isolated_cache):
     """A price resolver that only uses the bundled snapshot."""

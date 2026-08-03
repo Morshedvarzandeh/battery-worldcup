@@ -202,6 +202,9 @@ class ResidualValuation:
     health_source: str = "measured"
     """Which evidence the state-of-health figure came from. See HealthSource."""
 
+    condition: str = "healthy"
+    """Physical condition. Drives dangerous-goods freight, so it travels."""
+
     aging: AgingAssessment | None = None
     """How this pack compares with others of its model, and what is left of it."""
 

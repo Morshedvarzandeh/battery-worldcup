@@ -143,6 +143,7 @@ def valuation_to_dict(valuation: ResidualValuation) -> dict[str, Any]:
             "rated_kwh": valuation.rated_kwh,
             "state_of_health": round(valuation.state_of_health, 4),
             "health_source": valuation.health_source,
+            "condition": valuation.condition,
             "pack_model": (
                 {
                     "key": valuation.pack_model.key,

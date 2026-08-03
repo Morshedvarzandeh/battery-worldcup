@@ -1,0 +1,627 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Battery market — packs with their valuations attached</title>
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f2f4;
+    --border: #dee2e7;
+    --text: #16191d;
+    --muted: #5d6873;
+    --accent: #0b6b4f;
+    --accent-soft: #e6f2ee;
+    --positive: #0b6b4f;
+    --negative: #a3352c;
+    --negative-soft: #fbeceb;
+    --warn-bg: #fdf7e6;
+    --warn-border: #e9dcb0;
+    --warn-text: #7d6318;
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13171b; --surface: #1b2026; --surface-2: #222831; --border: #2f3841;
+      --text: #e7edf3; --muted: #9aa7b4; --accent: #4ec99a; --accent-soft: #133026;
+      --positive: #4ec99a; --negative: #f08a80; --negative-soft: #33211f;
+      --warn-bg: #2b2618; --warn-border: #4b4229; --warn-text: #d8bd6a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 940px; margin: 0 auto; padding: 30px 18px 72px; }
+
+  header { margin-bottom: 22px; }
+  h1 { font-size: 1.7rem; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0; font-size: 1.02rem; max-width: 62ch; }
+  nav { display: flex; gap: 8px; flex-wrap: wrap; margin: 20px 0 4px; }
+  nav button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 1.12rem; margin: 0 0 14px; letter-spacing: -0.01em; font-weight: 620; }
+  .card h2.quiet {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 600;
+  }
+
+  button {
+    font: inherit; font-weight: 550; padding: 11px 16px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer; min-height: 44px;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+  .grow { flex: 1 1 180px; }
+
+  input, select, textarea {
+    font: inherit; width: 100%; padding: 10px 12px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  input.ref { font-family: var(--mono); text-transform: uppercase; }
+  textarea { min-height: 76px; resize: vertical; }
+  label { display: block; font-size: 0.84rem; color: var(--muted); margin: 12px 0 5px; }
+
+  /* --- listings --- */
+  .listing {
+    border: 1px solid var(--border); border-radius: 11px; padding: 16px 18px;
+    margin-bottom: 12px; background: var(--surface); cursor: pointer;
+    display: grid; grid-template-columns: 1fr auto; gap: 6px 18px;
+  }
+  .listing:hover { border-color: var(--accent); }
+  .listing.disposal { border-left: 4px solid var(--negative); }
+  .listing-name { font-weight: 620; font-size: 1.04rem; }
+  .listing-meta { color: var(--muted); font-size: 0.88rem; }
+  /* The column is explicit as well as the row: an item with a definite row is
+     placed before the auto-flowed ones, so without it the price claims column
+     one and pushes the battery's name to the right. */
+  .listing-price {
+    grid-column: 2; grid-row: 1 / 3;
+    text-align: right; font-weight: 680; font-size: 1.2rem;
+    font-variant-numeric: tabular-nums; white-space: nowrap;
+  }
+  .listing-price small { display: block; font-weight: 500; font-size: 0.78rem;
+                         color: var(--muted); }
+
+  .chip {
+    display: inline-block; padding: 3px 10px; border-radius: 999px;
+    font-size: 0.76rem; font-weight: 620; border: 1px solid transparent;
+    margin-right: 6px; vertical-align: middle;
+  }
+  .chip.good { background: var(--accent-soft); color: var(--accent); }
+  .chip.fair { background: var(--warn-bg); color: var(--warn-text); border-color: var(--warn-border); }
+  .chip.weak { background: var(--negative-soft); color: var(--negative); }
+  .chip.plain { background: var(--surface-2); color: var(--muted); }
+
+  .price-band { margin: 14px 0 0; }
+  .gauge {
+    position: relative; height: 10px; border-radius: 999px;
+    background: var(--surface-2); margin: 10px 0 6px;
+  }
+  .gauge .fair {
+    position: absolute; top: 0; bottom: 0; background: var(--accent);
+    opacity: 0.35; border-radius: 999px;
+  }
+  .gauge .mark {
+    position: absolute; top: -5px; width: 3px; height: 20px; border-radius: 2px;
+    background: var(--text);
+  }
+  .gauge .guide { background: var(--accent); width: 2px; opacity: 0.8; }
+  .scale { display: flex; justify-content: space-between; color: var(--muted);
+           font-size: 0.78rem; }
+
+  .kv { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px;
+        font-size: 0.92rem; margin: 0; }
+  .kv dt { color: var(--muted); }
+  .kv dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+  .note { border: 1px solid var(--warn-border); background: var(--warn-bg);
+          color: var(--warn-text); border-radius: 9px; padding: 11px 14px;
+          font-size: 0.9rem; margin: 12px 0 0; }
+  .bad { border-color: var(--negative); background: var(--negative-soft);
+         color: var(--negative); }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  .empty { text-align: center; color: var(--muted); padding: 34px 10px; }
+  .ref { font-family: var(--mono); font-size: 0.86rem; color: var(--muted); }
+  .hidden { display: none !important; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.76rem;
+       text-transform: uppercase; letter-spacing: 0.05em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+
+  @media (max-width: 560px) {
+    .wrap { padding: 20px 14px 56px; }
+    h1 { font-size: 1.4rem; }
+    .card { padding: 18px 15px; }
+    .listing { grid-template-columns: 1fr; }
+    .listing-price { grid-row: auto; text-align: left; }
+    .row > button, .row > .grow { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>Battery market</h1>
+  <p class="sub">
+    Every pack here was scanned before it was listed, so the price sits next to
+    an independent valuation of the battery rather than next to a claim about it.
+  </p>
+  <nav>
+    <button id="tab-browse" class="on">Browse</button>
+    <button id="tab-sell">Sell a battery</button>
+    <button id="tab-prices">What packs sold for</button>
+  </nav>
+</header>
+
+<div id="view-browse">
+  <div class="card">
+    <h2 class="quiet">Filter</h2>
+    <div class="row">
+      <div class="grow">
+        <label for="f-q">Search</label>
+        <input id="f-q" type="text" placeholder="Leaf, Model 3, Zoe…">
+      </div>
+      <div class="grow">
+        <label for="f-chem">Chemistry</label>
+        <select id="f-chem">
+          <option value="">Any</option>
+          <option>NMC532</option><option>NMC622</option><option>NMC712</option>
+          <option>NMC811</option><option>NCA</option><option>LFP</option>
+          <option>LMO</option><option>NIMH</option>
+        </select>
+      </div>
+      <div class="grow">
+        <label for="f-kwh">Smallest pack (kWh)</label>
+        <input id="f-kwh" type="number" min="0" step="1" placeholder="any">
+      </div>
+      <div class="grow">
+        <label for="f-soh">Least health (%)</label>
+        <input id="f-soh" type="number" min="0" max="100" step="1" placeholder="any">
+      </div>
+      <button id="btn-filter" class="primary">Show</button>
+    </div>
+  </div>
+  <div id="listings"></div>
+</div>
+
+<div id="view-detail" class="hidden"></div>
+
+<div id="view-sell" class="hidden">
+  <div class="card">
+    <h2>Sell a battery</h2>
+    <p class="muted">
+      You need a valuation reference first. Scan the pack’s passport on the
+      <a href="/">main page</a> and it gives you one — that reference is what a
+      buyer opens to see the health, the wear and the workings.
+    </p>
+    <label for="s-ref">Valuation reference</label>
+    <input id="s-ref" class="ref" type="text" placeholder="BV-7K2P-M4X9">
+    <div class="row">
+      <button id="btn-guide">What is it worth?</button>
+    </div>
+    <div id="guide-out"></div>
+
+    <div id="sell-form" class="hidden">
+      <div class="row">
+        <div class="grow">
+          <label for="s-handle">How buyers reach you</label>
+          <input id="s-handle" type="text" placeholder="a handle or an email">
+        </div>
+        <div class="grow">
+          <label for="s-region">Where the pack is</label>
+          <input id="s-region" type="text" placeholder="NL, Rotterdam">
+        </div>
+        <div class="grow">
+          <label for="s-price">Asking price</label>
+          <input id="s-price" type="number" min="0" step="1">
+        </div>
+      </div>
+      <label for="s-desc">Anything a buyer should know</label>
+      <textarea id="s-desc" placeholder="Removed last month, still on the pallet, forklift on site…"></textarea>
+      <div class="row" style="margin-top:14px">
+        <button id="btn-list" class="primary">Put it on the market</button>
+      </div>
+      <div id="sell-out"></div>
+    </div>
+  </div>
+</div>
+
+<div id="view-prices" class="hidden"></div>
+
+<footer class="muted" style="margin-top:26px">
+  Prices are estimates from each battery’s own passport data and published
+  material markets, not offers. Traction packs are UN3480 Class 9 dangerous
+  goods — moving one is a job for a carrier who is set up for it.
+</footer>
+
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const money = (n, ccy) => (ccy === "EUR" ? "€" : ccy + " ")
+  + Number(n).toLocaleString(undefined, { maximumFractionDigits: 0 });
+// Per-kWh figures live in the tens of euros, where rounding to whole euros
+// throws away the difference between a good buy and a bad one.
+const perKwh = (n, ccy) => (ccy === "EUR" ? "€" : ccy + " ")
+  + Number(n).toLocaleString(undefined, { minimumFractionDigits: 1,
+                                          maximumFractionDigits: 1 });
+
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+  return data;
+}
+
+// -- browse ----------------------------------------------------------------
+
+function listingCard(listing) {
+  const price = listing.price;
+  const isDisposal = listing.kind === "disposal";
+  const amount = isDisposal
+    ? "collection"
+    : money(price.asking, price.currency);
+
+  return '<div class="listing' + (isDisposal ? " disposal" : "")
+    + '" data-ref="' + esc(listing.reference) + '">'
+    + '<div>'
+    + '<div class="listing-name">' + esc(listing.title) + "</div>"
+    + '<div class="listing-meta">'
+    + listing.battery.rated_kwh + " kWh &middot; "
+    + Math.round(listing.battery.state_of_health * 100) + "% health &middot; "
+    + esc(listing.battery.chemistry)
+    + (listing.region ? " &middot; " + esc(listing.region) : "")
+    + "</div></div>"
+    + '<div class="listing-price">' + amount
+    + (isDisposal ? "" : "<small>" + perKwh(price.per_kwh, price.currency) + "/kWh</small>")
+    + "</div>"
+    + '<div style="grid-column:1/-1">'
+    + '<span class="chip ' + esc(price.tone) + '">' + esc(price.verdict_label) + "</span>"
+    + (listing.wear.verdict && listing.wear.verdict !== "unknown"
+        ? '<span class="chip plain">' + esc(wearLabel(listing.wear.verdict)) + "</span>" : "")
+    + (listing.dangerous_goods
+        ? '<span class="chip weak">Damaged — special freight</span>' : "")
+    + (listing.offers.count
+        ? '<span class="chip plain">' + listing.offers.count + " offer(s)</span>" : "")
+    + "</div></div>";
+}
+
+function wearLabel(verdict) {
+  return { ahead: "Ageing well", typical: "Ageing normally",
+           behind: "Ageing faster than most" }[verdict] || "";
+}
+
+async function loadListings() {
+  const params = new URLSearchParams({ status: "active", limit: "60" });
+  if ($("f-q").value.trim()) params.set("q", $("f-q").value.trim());
+  if ($("f-chem").value) params.set("chemistry", $("f-chem").value);
+  if ($("f-kwh").value) params.set("min_kwh", $("f-kwh").value);
+  if ($("f-soh").value) params.set("min_soh", String(Number($("f-soh").value) / 100));
+
+  const box = $("listings");
+  box.innerHTML = '<div class="empty">Loading…</div>';
+  try {
+    const data = await api("/v1/market/listings?" + params);
+    if (!data.count) {
+      box.innerHTML = '<div class="card empty">Nothing listed that matches. '
+        + "The market starts empty — scan a pack and list it.</div>";
+      return;
+    }
+    box.innerHTML = data.listings.map(listingCard).join("");
+    for (const node of box.querySelectorAll(".listing")) {
+      node.addEventListener("click", () => showListing(node.dataset.ref));
+    }
+  } catch (err) {
+    box.innerHTML = '<div class="card note bad">' + esc(err.message) + "</div>";
+  }
+}
+
+// -- one listing -----------------------------------------------------------
+
+// The gauge is the whole argument in one picture: where the asking price sits
+// against a band derived from this battery's own valuation, rather than
+// against whatever similar-looking packs happen to be listed at this week.
+function gauge(price) {
+  const span = Math.max(price.guide_high * 1.35, price.asking * 1.15, 1);
+  const pct = (value) => Math.max(0, Math.min(100, (value / span) * 100));
+  return '<div class="gauge">'
+    + '<div class="fair" style="left:' + pct(price.guide_low) + "%;right:"
+    + (100 - pct(price.guide_high)) + '%"></div>'
+    + '<div class="mark guide" style="left:' + pct(price.guide) + '%"></div>'
+    + '<div class="mark" style="left:' + pct(price.asking) + '%"></div>'
+    + "</div>"
+    + '<div class="scale"><span>' + money(0, price.currency) + "</span>"
+    + "<span>what a buyer works to: " + money(price.guide_low, price.currency)
+    + "–" + money(price.guide_high, price.currency) + "</span>"
+    + "<span>" + money(span, price.currency) + "</span></div>";
+}
+
+async function showListing(reference) {
+  show("detail");
+  const box = $("view-detail");
+  box.innerHTML = '<div class="card empty">Loading…</div>';
+  let listing;
+  try {
+    listing = await api("/v1/market/listings/" + encodeURIComponent(reference));
+  } catch (err) {
+    box.innerHTML = '<div class="card note bad">' + esc(err.message) + "</div>";
+    return;
+  }
+
+  const price = listing.price;
+  const battery = listing.battery;
+  const isDisposal = listing.kind === "disposal";
+
+  let html = '<div class="row" style="margin-bottom:14px">'
+    + '<button id="btn-back">&larr; All listings</button></div>';
+
+  html += '<div class="card">';
+  html += "<h2>" + esc(listing.title) + "</h2>";
+  html += '<div class="ref">' + esc(listing.reference) + " &middot; listed "
+    + listing.age_days + " day(s) ago &middot; " + esc(listing.status_label) + "</div>";
+
+  html += '<div class="price-band">';
+  if (isDisposal) {
+    html += '<div class="note bad">' + esc(price.note) + "</div>";
+  } else {
+    html += '<div style="font-size:1.9rem;font-weight:680;letter-spacing:-0.02em">'
+      + money(price.asking, price.currency)
+      + ' <span class="muted" style="font-size:1rem;font-weight:500">'
+      + perKwh(price.per_kwh, price.currency) + "/kWh</span></div>";
+    html += '<span class="chip ' + esc(price.tone) + '">'
+      + esc(price.verdict_label) + "</span>";
+    html += gauge(price);
+    html += '<p class="muted">' + esc(price.note) + "</p>";
+  }
+  html += "</div>";
+
+  if (listing.dangerous_goods) {
+    html += '<div class="note bad">This pack is recorded as damaged. It is still '
+      + "UN3480 Class 9, but a damaged cell falls under ADR special provision 376 — "
+      + "a different carrier, different packaging and a materially higher freight "
+      + "cost. Agree who is arranging it before you agree a price.</div>";
+  } else if (listing.collection_only) {
+    html += '<div class="note">Collection only. A traction pack is dangerous '
+      + "goods; it is not something a parcel courier will take.</div>";
+  }
+
+  if (listing.description) {
+    html += "<p>" + esc(listing.description) + "</p>";
+  }
+  html += "</div>";
+
+  html += '<div class="card"><h2>What the battery actually is</h2>';
+  html += '<dl class="kv">'
+    + "<dt>Pack</dt><dd>" + esc(battery.label) + "</dd>"
+    + "<dt>Energy</dt><dd>" + battery.rated_kwh + " kWh</dd>"
+    + "<dt>Health</dt><dd>" + Math.round(battery.state_of_health * 100) + "%"
+    + (battery.health_source === "measured"
+        ? ' <span class="chip good">measured</span>'
+        : ' <span class="chip fair">estimated from ' + esc(battery.health_source) + "</span>")
+    + "</dd>"
+    + "<dt>Chemistry</dt><dd>" + esc(battery.chemistry) + "</dd>"
+    + "<dt>Valuation</dt><dd>" + money(price.estimate, price.currency)
+    + " end to end, confidence " + Math.round(price.valuation_confidence * 100) + "%</dd>"
+    + "</dl>";
+
+  if (listing.wear.headline) {
+    html += '<p style="margin-top:14px">' + esc(listing.wear.headline) + "</p>";
+    if (listing.wear.years_to_resale_floor != null) {
+      html += '<p class="muted">Stays good enough to resell for about '
+        + Math.round(listing.wear.years_to_resale_floor) + " more year(s).</p>";
+    }
+  }
+
+  html += '<div class="row" style="margin-top:14px">'
+    + '<a href="/market/report/' + encodeURIComponent(listing.reference)
+    + '" target="_blank"><button>Read the full valuation</button></a></div>';
+  html += '<p class="muted" style="margin-top:10px">'
+    + "Every figure above comes from the seller’s own scan of the pack "
+    + "(<span class='ref'>" + esc(listing.valuation_reference) + "</span>), not from "
+    + "the listing. You can read the whole thing, including where each material "
+    + "price came from.</p>";
+  html += "</div>";
+
+  if (!isDisposal && listing.status === "active") {
+    html += '<div class="card"><h2>Make an offer</h2>'
+      + '<div class="row">'
+      + '<div class="grow"><label for="o-handle">How the seller reaches you</label>'
+      + '<input id="o-handle" type="text" placeholder="a handle or an email"></div>'
+      + '<div class="grow"><label for="o-amount">Your offer</label>'
+      + '<input id="o-amount" type="number" min="1" step="1" value="'
+      + Math.round(price.guide) + '"></div>'
+      + "</div>"
+      + '<label for="o-msg">Message (optional)</label>'
+      + '<textarea id="o-msg" placeholder="Can collect this weekend…"></textarea>'
+      + '<div class="row" style="margin-top:14px">'
+      + '<button id="btn-offer" class="primary">Send the offer</button></div>'
+      + '<div id="offer-out"></div></div>';
+  }
+
+  const offers = (listing.offers.all || []).filter((o) => o.status !== "withdrawn");
+  if (offers.length) {
+    html += '<div class="card"><h2 class="quiet">Offers so far</h2><table>'
+      + "<tr><th>Buyer</th><th class='num'>Amount</th><th>Status</th></tr>"
+      + offers.map((o) => "<tr><td>" + esc(o.buyer_handle) + "</td>"
+          + "<td class='num'>" + money(o.amount, o.currency) + "</td>"
+          + "<td>" + esc(o.status) + "</td></tr>").join("")
+      + "</table></div>";
+  }
+
+  box.innerHTML = html;
+  $("btn-back").addEventListener("click", () => { show("browse"); loadListings(); });
+  const offerButton = $("btn-offer");
+  if (offerButton) {
+    offerButton.addEventListener("click", () => sendOffer(listing.reference));
+  }
+}
+
+async function sendOffer(reference) {
+  const out = $("offer-out");
+  out.innerHTML = "";
+  const handle = $("o-handle").value.trim();
+  const amount = Number($("o-amount").value);
+  if (!handle) { out.innerHTML = '<div class="note">Add a way to be reached.</div>'; return; }
+  if (!(amount > 0)) { out.innerHTML = '<div class="note">Offer something above zero.</div>'; return; }
+  try {
+    const offer = await api(
+      "/v1/market/listings/" + encodeURIComponent(reference) + "/offers",
+      { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ buyer_handle: handle, amount, message: $("o-msg").value }) }
+    );
+    out.innerHTML = '<div class="note">Offer sent. Your reference is <span class="ref">'
+      + esc(offer.reference) + "</span>.</div>";
+  } catch (err) {
+    out.innerHTML = '<div class="note bad">' + esc(err.message) + "</div>";
+  }
+}
+
+// -- selling ---------------------------------------------------------------
+
+async function fetchGuide() {
+  const out = $("guide-out");
+  const reference = $("s-ref").value.trim();
+  out.innerHTML = "";
+  $("sell-form").classList.add("hidden");
+  if (!reference) { out.innerHTML = '<div class="note">Enter your reference.</div>'; return; }
+  try {
+    const guide = await api("/v1/market/guide/" + encodeURIComponent(reference));
+    if (guide.is_disposal) {
+      out.innerHTML = '<div class="note bad">' + esc(guide.note) + "</div>"
+        + '<p class="muted">You can still list it so a recycler can find it — '
+        + "it goes up as a collection job rather than a sale.</p>";
+    } else {
+      out.innerHTML = '<div class="card" style="margin-top:14px">'
+        + "<h2>" + esc(guide.battery) + "</h2>"
+        + '<div style="font-size:1.9rem;font-weight:680">'
+        + money(guide.guide, guide.currency) + "</div>"
+        + '<p class="muted">A buyer works to ' + money(guide.low, guide.currency)
+        + "–" + money(guide.high, guide.currency) + ". Your battery is worth "
+        + money(guide.estimate, guide.currency) + " end to end; the difference is "
+        + "what the buyer spends collecting, testing and reselling it, plus their "
+        + "margin.</p></div>";
+      $("s-price").value = Math.round(guide.guide);
+    }
+    $("sell-form").classList.remove("hidden");
+  } catch (err) {
+    out.innerHTML = '<div class="note bad">' + esc(err.message) + "</div>";
+  }
+}
+
+async function createListing() {
+  const out = $("sell-out");
+  out.innerHTML = "";
+  const handle = $("s-handle").value.trim();
+  if (!handle) { out.innerHTML = '<div class="note">Add a way to be reached.</div>'; return; }
+  try {
+    const listing = await api("/v1/market/listings", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        valuation_reference: $("s-ref").value.trim(),
+        seller_handle: handle,
+        region: $("s-region").value.trim(),
+        asking_price: $("s-price").value ? Number($("s-price").value) : null,
+        description: $("s-desc").value,
+      }),
+    });
+    out.innerHTML = '<div class="note">Listed as <span class="ref">'
+      + esc(listing.reference) + "</span>.</div>";
+    setTimeout(() => showListing(listing.reference), 600);
+  } catch (err) {
+    out.innerHTML = '<div class="note bad">' + esc(err.message) + "</div>";
+  }
+}
+
+// -- what packs sold for ---------------------------------------------------
+
+async function loadPrices() {
+  const box = $("view-prices");
+  box.innerHTML = '<div class="card empty">Loading…</div>';
+  try {
+    const data = await api("/v1/market/prices");
+    const models = Object.values(data.models);
+    let html = '<div class="card"><h2>What packs actually sold for</h2>';
+    html += '<p class="muted">Every completed sale here is an observation of what '
+      + "one identified pack, of known health, fetched on a known date. That is a "
+      + "different kind of claim from the estimated used-part values the valuation "
+      + "leans on today, and it is meant to replace them. A model needs three "
+      + "sales before it gets a published figure — one transaction is an anecdote.</p>";
+    if (!models.length) {
+      html += '<div class="empty">No model has reached three completed sales yet. '
+        + "(" + data.sales + " sale(s) recorded.)</div></div>";
+      box.innerHTML = html;
+      return;
+    }
+    html += "<table><tr><th>Pack</th><th class='num'>Median /kWh</th>"
+      + "<th class='num'>Range</th><th class='num'>Health</th>"
+      + "<th class='num'>Sales</th></tr>";
+    for (const m of models) {
+      html += "<tr><td>" + esc(m.label) + "</td>"
+        + "<td class='num'>" + perKwh(m.median_price_per_kwh, m.currency) + "</td>"
+        + "<td class='num'>" + perKwh(m.lowest_price_per_kwh, m.currency) + "–"
+        + perKwh(m.highest_price_per_kwh, m.currency) + "</td>"
+        + "<td class='num'>" + Math.round(m.min_soh * 100) + "–"
+        + Math.round(m.max_soh * 100) + "%</td>"
+        + "<td class='num'>" + m.sample_size + "</td></tr>";
+    }
+    html += "</table></div>";
+    box.innerHTML = html;
+  } catch (err) {
+    box.innerHTML = '<div class="card note bad">' + esc(err.message) + "</div>";
+  }
+}
+
+// -- routing ---------------------------------------------------------------
+
+function show(view) {
+  for (const name of ["browse", "detail", "sell", "prices"]) {
+    $("view-" + name).classList.toggle("hidden", name !== view);
+  }
+  for (const name of ["browse", "sell", "prices"]) {
+    $("tab-" + name).classList.toggle("on", name === view);
+  }
+  const hash = view === "browse" ? "" : "#/" + view;
+  if (view !== "detail" && location.hash !== hash) history.replaceState(null, "", hash || "#");
+}
+
+function route() {
+  const match = /^#\/listing\/(.+)$/.exec(location.hash);
+  if (match) { showListing(decodeURIComponent(match[1])); return; }
+  if (location.hash === "#/sell") { show("sell"); return; }
+  if (location.hash === "#/prices") { show("prices"); loadPrices(); return; }
+  show("browse");
+  loadListings();
+}
+
+$("tab-browse").addEventListener("click", () => { show("browse"); loadListings(); });
+$("tab-sell").addEventListener("click", () => show("sell"));
+$("tab-prices").addEventListener("click", () => { show("prices"); loadPrices(); });
+$("btn-filter").addEventListener("click", loadListings);
+$("f-q").addEventListener("keydown", (e) => { if (e.key === "Enter") loadListings(); });
+$("btn-guide").addEventListener("click", fetchGuide);
+$("btn-list").addEventListener("click", createListing);
+window.addEventListener("hashchange", route);
+
+route();
+</script>
+</body>
+</html>

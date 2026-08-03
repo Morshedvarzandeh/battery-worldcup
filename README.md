@@ -171,6 +171,27 @@ open("report.html", "w").write(build_html_report(valuation))
 The plain-language wording lives in `battery_value.valuation.plain`, so any
 client shows the same phrasing rather than inventing its own.
 
+## Selling it
+
+The second-hand battery market is thin because a buyer cannot check what a
+seller claims about health. A defensible number for a specific pack is exactly
+what closes that gap, so listings are built **from a valuation reference**:
+
+```bash
+bv value --file passport.json                 # → BV-7K2P-M4X9
+bv market sell BV-7K2P-M4X9 --seller nl-ev-garage
+bv serve                                      # http://127.0.0.1:8000/market
+```
+
+There is no field for state of health on a listing. It comes from the scan, and
+the buyer opens the same report the seller was given. The asking price is shown
+against a guide derived from that valuation, and completed sales become
+observations that flow back into battery-data — turning the model's weakest
+inputs into measurements of what packs actually fetched.
+
+**[docs/marketplace.md](docs/marketplace.md)** covers the guide price, disposal
+listings, and what the prototype deliberately does not do.
+
 ## Getting real market prices
 
 **This is the part that needs your attention before quoting anyone a number.**
@@ -241,6 +262,8 @@ custom-layer API.
   photo-decoding path, and the shareable report.
 - **[How it is wearing](docs/aging.md)** — fade curves per pack model, the
   verdict against a cohort, and the two things the layer refuses to say.
+- **[The market](docs/marketplace.md)** — listings that carry their own
+  valuation, the price guide, and how sales become observations.
 - **[Methodology](docs/methodology.md)** — how each of the four values is
   calculated, what drives confidence, and the known limitations.
 - **[Market data](docs/market-data.md)** — every price source, the
