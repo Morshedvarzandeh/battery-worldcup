@@ -389,3 +389,125 @@ class TestHttp:
     def test_a_stored_record_keeps_its_passport(self, stored):
         """A certificate reissued months later must say the same things."""
         assert stored.payload["passport"]["identity"]["battery_id"]
+
+
+class TestForecast:
+    """The forward number, which is the one a lessor actually commits to."""
+
+    def _passport(self, passports, made, soh, cycles, kwh=77, chemistry="NMC712",
+                  model="Volkswagen ID.4 Pro (77 kWh)"):
+        return passports.from_document(
+            {
+                "batteryPassport": {
+                    "generalInformation": {
+                        "batteryId": "LEASE-0042",
+                        "manufacturerName": model.split()[0],
+                        "vehicleModel": model,
+                        "manufacturingDate": made,
+                    },
+                    "performanceAndDurability": {
+                        "ratedCapacity": {"value": kwh, "unit": "kWh"},
+                        "stateOfHealth": {"value": soh},
+                        "numberOfFullCycles": cycles,
+                    },
+                    "materialComposition": {"batteryChemistry": chemistry},
+                }
+            }
+        )
+
+    def _forecast(self, engine, passport, years=5.0):
+        from battery_value.valuation import forecast as forecast_module
+
+        return forecast_module.build(
+            passport, engine, years=years, as_of=date(2026, 8, 3)
+        )
+
+    def test_value_falls_across_the_horizon(self, engine, passports):
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420)
+        )
+        assert forecast.now.value.amount > forecast.at_end.value.amount
+        assert forecast.total_decline.amount > 0
+
+    def test_the_band_opens_up_once_the_horizon_does(self, engine, passports):
+        """Today's value is known; next year's is not, and the band says so.
+
+        It does not widen forever, and that is the model working rather than
+        failing: once a pack is old enough that its value rests on its parts
+        rather than on resale, health uncertainty stops moving the price, so the
+        band closes again. Asserting monotonic widening would be asserting that
+        the pathway switch does not happen.
+        """
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420)
+        )
+        assert forecast.points[2].band.amount > forecast.points[0].band.amount
+
+    def test_the_health_band_never_narrows(self, engine, passports):
+        """Whatever the value does, the cohort keeps diverging."""
+        from battery_value.valuation import forecast as forecast_module
+
+        passport = self._passport(passports, "2021-06-01", 93, 420)
+        forecast = self._forecast(engine, passport)
+        assert isinstance(forecast, forecast_module.ResidualForecast)
+        # low and high are built from a spread that widens with the step, so the
+        # health interval behind the money must be non-decreasing.
+        for earlier, later in zip(forecast.points, forecast.points[1:]):
+            assert later.state_of_health <= earlier.state_of_health
+
+    def test_health_only_ever_falls(self, engine, passports):
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420)
+        )
+        healths = [point.state_of_health for point in forecast.points]
+        assert healths == sorted(healths, reverse=True)
+
+    def test_a_healthy_pack_has_a_near_worthless_warranty(self, engine, passports):
+        """Nothing to claim, so the guarantee is not worth much."""
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420)
+        )
+        assert forecast.warranty_claim_probability < 0.05
+        assert forecast.warranty_value.amount < forecast.now.value.amount * 0.1
+
+    def test_a_marginal_pack_has_a_valuable_one(self, engine, passports):
+        """And today both are priced identically, which is the mistake."""
+        forecast = self._forecast(
+            engine,
+            self._passport(
+                passports, "2019-04-01", 76, 1500, kwh=40,
+                chemistry="NMC532", model="Nissan Leaf ZE1 40 kWh",
+            ),
+        )
+        assert forecast.warranty_claim_probability > 0.1
+        assert forecast.warranty_value.amount > forecast.now.value.amount
+
+    def test_warranty_coverage_ends_on_a_date(self, engine, passports):
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420), years=6
+        )
+        assert forecast.warranty_expires_on is not None
+        covered = [point.under_warranty for point in forecast.points]
+        assert covered[0] is True and covered[-1] is False
+        # Once it lapses it never comes back.
+        assert covered == sorted(covered, reverse=True)
+
+    def test_the_forecast_does_not_age_the_caller_s_passport(
+        self, engine, passports
+    ):
+        """A forecast that quietly mutated its input would corrupt every later
+        valuation of the same pack."""
+        passport = self._passport(passports, "2021-06-01", 93, 420)
+        self._forecast(engine, passport)
+        assert passport.health.state_of_health_pct == pytest.approx(93)
+
+    def test_doubt_is_priced_separately_from_wear(self, engine, passports):
+        """What a certificate is worth is not the same as what the battery lost."""
+        from battery_value.valuation.forecast import UNCERTAINTY_DISCOUNT
+
+        forecast = self._forecast(
+            engine, self._passport(passports, "2021-06-01", 93, 420)
+        )
+        assert forecast.uncertainty_discount().amount == pytest.approx(
+            forecast.at_end.value.amount * UNCERTAINTY_DISCOUNT
+        )

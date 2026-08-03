@@ -218,6 +218,20 @@ bv portfolio
 #   at the cliff     2 pack(s) holding €2,229 drop below resale grade within 2 years
 ```
 
+And because a warranty is a put option that expires on a known date:
+
+```bash
+bv forecast BV-7K2P-M4X9 --years 6
+#   Worth €2,633 today and about €1,821 in 6 years (€1,617 to €2,024).
+#   Warranty runs to February 2029, and on this pack's trajectory it is
+#   worth about €106 (1% chance of a claim).
+```
+
+On a healthy pack that guarantee is worth almost nothing; on a marginal one of
+the same age it can be worth more than the battery. Today both are priced
+identically — which is why residuals get set to zero, and why the lessee ends up
+paying for a battery somebody else collects.
+
 **[docs/economics.md](docs/economics.md)** is why all of this is one product.
 
 ## Getting real market prices

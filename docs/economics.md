@@ -117,6 +117,70 @@ anything: the engine already re-prices every battery under a health shock, so th
 local slope is sitting in the stored record. A thousand-pack portfolio is one
 database read.
 
+## The warranty is a put option, and it expires
+
+This is where the money is, and it is the part nobody prices.
+
+Under an 8-year/70% warranty the holder's downside is capped: if the pack falls
+through the floor the maker replaces it. That is a put option. It is worth real
+money, its value depends entirely on how close *this* pack is to the floor, and
+it disappears on a known date.
+
+```bash
+bv forecast BV-7K2P-M4X9 --years 6
+```
+
+```
+Worth €2,633 today and about €1,821 in 6 years (€1,617 to €2,024).
+Warranty runs to February 2029, and on this pack's trajectory it is worth
+about €106 (1% chance of a claim).
+
+  date          health      value       low      high   warranty
+  2026-08-03    89.0%      2,633     2,423     2,633   covered
+  2028-08-02    86.6%      1,981     1,794     2,292   covered
+  2029-08-02    85.5%      1,883     1,749     2,019   exposed
+  2032-08-02    82.3%      1,821     1,617     2,024   exposed
+
+warranty left    €106  (1% chance of a claim before it expires)
+cost of doubt    €546 at the horizon, which is what evidence is worth
+```
+
+On a healthy pack the guarantee is worth almost nothing. On a marginal one of
+the same age it can be worth **more than the battery** — a Leaf at 76% with a
+year of cover left carries a warranty worth €3,400 against a pack worth €1,900.
+
+Today those two are priced identically. That is the mistake, and it runs in both
+directions: a lessor is over-reserving against the good pack and under-reserving
+against the bad one, and neither position is visible.
+
+The claim probability comes from how far real packs of that model scatter at
+that age — a number the wear curve already carries. Nothing here needs a new
+assumption.
+
+## Why residuals are set at zero, and what that costs
+
+A leasing company does not need today's price. They commit to a **forward**
+number at contract signing and find out three years later whether they were
+right. Because nobody could defend one, the industry sets battery residuals at
+or near zero.
+
+That is not caution, it is a transfer. A residual set to zero is priced into the
+monthly payment, so the lessee pays for a battery the lessor then hands to
+whoever buys the car at auction. Everyone in the chain except the auction buyer
+is worse off.
+
+The forecast **re-values** the pack at each horizon rather than extrapolating.
+Over a few years most packs cross the resale floor, where the best route
+disappears outright, and a straight line through that cliff reports a number
+that cannot happen. It also does something a spot valuation cannot: it separates
+**wear** from **doubt**. The uncertainty discount is what a buyer knocks off a
+pack nobody has measured — it prices the risk of being wrong, not the battery —
+and it is exactly what a certificate removes.
+
+That makes the certificate's value quotable rather than rhetorical: on the pack
+above it is €546 at the six-year mark. A lessor writing 4,000 contracts can
+multiply.
+
 ## Recycling is the floor, not the goal
 
 Recycling matters here as the **reservation price**. It is always available, so

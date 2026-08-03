@@ -146,6 +146,45 @@ def get_portfolio(
     )
 
 
+@router.get("/valuations/{reference}/forecast")
+def get_forecast(
+    reference: str,
+    years: float = Query(5.0, gt=0, le=15),
+    climate: str = Query("temperate"),
+) -> dict[str, Any]:
+    """What the pack will be worth later, and what its warranty is worth now.
+
+    The number a leasing company actually commits to. Because nobody could
+    defend one, battery residuals have been set at or near zero — which makes
+    leases dearer than they need to be and hands the upside to whoever buys the
+    car at auction.
+    """
+    from ..market.resolver import build_resolver
+    from ..valuation import forecast as forecast_module
+    from ..valuation.engine import ValuationEngine
+
+    record = default_store().get(reference)
+    if record is None:
+        raise HTTPException(
+            status_code=404, detail=f"no valuation {normalise_reference(reference)}"
+        )
+    document = record.payload.get("passport")
+    if document is None:
+        raise HTTPException(
+            status_code=409,
+            detail="this record has no passport stored; re-scan the battery",
+        )
+
+    engine = ValuationEngine(prices=build_resolver(currency=record.currency))
+    forecast = forecast_module.build(
+        PassportResolver().from_document(document),
+        engine,
+        years=years,
+        climate=climate,
+    )
+    return forecast_module.to_dict(forecast)
+
+
 @pages.get("/verify", response_class=HTMLResponse)
 def verify_page() -> HTMLResponse:
     """The public certificate checker."""

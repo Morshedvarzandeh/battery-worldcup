@@ -542,6 +542,67 @@ def cmd_portfolio(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_forecast(args: argparse.Namespace) -> int:
+    """What a pack will be worth later, and what the warranty is worth now."""
+    from .passport.resolver import PassportResolver
+    from .valuation import forecast as forecast_module
+
+    record = default_store().get(args.reference)
+    if record is None:
+        print(
+            f"error: no valuation found for {normalise_reference(args.reference)}",
+            file=sys.stderr,
+        )
+        return 1
+    document = record.payload.get("passport")
+    if document is None:
+        print(
+            "error: this record has no passport stored. Re-scan the battery.",
+            file=sys.stderr,
+        )
+        return 1
+
+    engine = _build_engine(args)
+    forecast = forecast_module.build(
+        PassportResolver().from_document(document),
+        engine,
+        years=args.years,
+        climate=args.climate,
+    )
+
+    if args.json:
+        print(json.dumps(forecast_module.to_dict(forecast), indent=2))
+        return 0
+
+    out = [_RULE, f"  FORECAST {record.battery_label}", _RULE]
+    out.append(f"  {forecast.summary()}")
+    out.append("")
+    out.append(
+        f"    {'date':<12}{'health':>8}{'value':>11}{'low':>10}{'high':>10}   warranty"
+    )
+    for point in forecast.points:
+        out.append(
+            f"    {point.on.isoformat():<12}{point.state_of_health:>7.1%}"
+            f"{point.value.amount:>11,.0f}{point.low.amount:>10,.0f}"
+            f"{point.high.amount:>10,.0f}   "
+            f"{'covered' if point.under_warranty else 'exposed'}"
+        )
+    out.append("")
+    if forecast.warranty_value is not None:
+        out.append(
+            f"  warranty left    {forecast.warranty_value.format(0)}  "
+            f"({forecast.warranty_claim_probability:.0%} chance of a claim before "
+            "it expires)"
+        )
+    out.append(
+        f"  cost of doubt    {forecast.uncertainty_discount().format(0)} at the "
+        f"horizon, which is what evidence is worth on this pack"
+    )
+    out.append(_RULE)
+    print("\n".join(out))
+    return 0
+
+
 def _render_certificate(certificate) -> str:
     """A certificate as a person reads it: who said what."""
     out: list[str] = [_RULE]
@@ -1048,6 +1109,24 @@ def build_parser() -> argparse.ArgumentParser:
     )
     verify_parser.add_argument("file", help="a certificate JSON file")
     verify_parser.set_defaults(func=cmd_verify)
+
+    forecast_parser = subparsers.add_parser(
+        "forecast",
+        help="what a pack will be worth later, and what its warranty is worth",
+        description=(
+            "Re-values the pack at each horizon rather than extrapolating, "
+            "because most packs cross the resale floor within a few years and a "
+            "straight line through that cliff reports a number that cannot "
+            "happen."
+        ),
+    )
+    forecast_parser.add_argument("reference", help="valuation reference")
+    forecast_parser.add_argument("--years", type=float, default=5.0)
+    forecast_parser.add_argument(
+        "--climate", choices=CLIMATES, default=DEFAULT_CLIMATE
+    )
+    add_market_arguments(forecast_parser)
+    forecast_parser.set_defaults(func=cmd_forecast)
 
     portfolio_parser = subparsers.add_parser(
         "portfolio",
