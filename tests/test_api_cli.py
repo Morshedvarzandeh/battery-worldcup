@@ -9,8 +9,8 @@ import pytest
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 
-from battery_worldcup.api.app import app  # noqa: E402
-from battery_worldcup.cli import main  # noqa: E402
+from battery_value.api.app import app  # noqa: E402
+from battery_value.cli import main  # noqa: E402
 
 
 @pytest.fixture
@@ -29,7 +29,7 @@ class TestApi:
         response = client.get("/")
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
-        assert "Battery residual value" in response.text
+        assert "What is your battery worth?" in response.text
 
     def test_scan_returns_a_passport(self, client, eu_dpp_document):
         body = client.post("/v1/scan", json={"document": eu_dpp_document}).json()
@@ -133,6 +133,59 @@ class TestApi:
     def test_openapi_schema_builds(self, client):
         assert client.get("/openapi.json").status_code == 200
 
+    def test_value_includes_plain_language(self, client, eu_dpp_document):
+        """The end-user view must not have to invent its own wording."""
+        body = client.post(
+            "/v1/value", json={"document": eu_dpp_document, "offline": True}
+        ).json()
+        assert body["plain"]["headline"]
+        assert body["plain"]["confidence"]["label"]
+        assert body["plain"]["why"]
+        assert "NMC" not in body["plain"]["chemistry"]
+        for pathway in body["pathways"]:
+            assert pathway["friendly_label"]
+            assert pathway["explanation"]
+
+    def test_report_is_a_downloadable_file(self, client, eu_dpp_document):
+        response = client.post(
+            "/v1/report", json={"document": eu_dpp_document, "offline": True}
+        )
+        assert response.status_code == 200
+        disposition = response.headers["content-disposition"]
+        assert disposition.startswith("attachment;")
+        assert ".html" in disposition
+        assert response.text.startswith("<!doctype html>")
+
+    def test_report_can_omit_the_technical_section(self, client, eu_dpp_document):
+        payload = {"document": eu_dpp_document, "offline": True}
+        full = client.post("/v1/report", json=payload).text
+        summary = client.post("/v1/report?technical=false", json=payload).text
+        assert len(summary) < len(full)
+
+    def test_decode_returns_the_payload(self, client, qr_image_bytes):
+        response = client.post(
+            "/v1/decode", files={"file": ("qr.png", qr_image_bytes, "image/png")}
+        )
+        assert response.status_code == 200
+        assert "batteryPassport" in response.json()["payload"]
+
+    def test_decode_rejects_a_non_image(self, client):
+        response = client.post(
+            "/v1/decode", files={"file": ("x.png", b"not an image", "image/png")}
+        )
+        assert response.status_code == 422
+
+    def test_value_from_a_photo(self, client, qr_image_bytes):
+        """The main path on a phone: photograph the code, get a number."""
+        response = client.post(
+            "/v1/value/image?offline=true",
+            files={"file": ("qr.png", qr_image_bytes, "image/png")},
+        )
+        assert response.status_code == 200
+        body = response.json()
+        assert body["residual_value"]["amount"] != 0
+        assert body["plain"]["headline"]
+
 
 class TestCli:
     def test_value_renders_a_report(self, tmp_path, capsys, eu_dpp_document):
@@ -181,6 +234,32 @@ class TestCli:
     def test_error_exits_nonzero(self, tmp_path, capsys):
         assert main(["value", "--file", str(tmp_path / "missing.json")]) == 1
         assert "error:" in capsys.readouterr().err
+
+    def test_writes_a_report_file(self, tmp_path, capsys, eu_dpp_document):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+        out = tmp_path / "report.html"
+
+        assert main([
+            "value", "--file", str(passport), "--offline",
+            "--report", str(out), "--quiet",
+        ]) == 0
+        assert out.exists()
+        assert out.read_text(encoding="utf-8").startswith("<!doctype html>")
+        assert capsys.readouterr().out == ""
+
+    def test_report_into_a_directory_gets_a_generated_name(
+        self, tmp_path, eu_dpp_document
+    ):
+        passport = tmp_path / "passport.json"
+        passport.write_text(json.dumps(eu_dpp_document), encoding="utf-8")
+
+        assert main([
+            "value", "--file", str(passport), "--offline",
+            "--report", str(tmp_path), "--quiet",
+        ]) == 0
+        reports = list(tmp_path.glob("battery-value-*.html"))
+        assert len(reports) == 1
 
     def test_qr_payload_with_inline_json(self, capsys, eu_dpp_document):
         payload = json.dumps(eu_dpp_document)

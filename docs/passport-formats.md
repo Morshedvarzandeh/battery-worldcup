@@ -15,7 +15,7 @@ the code contains. In practice a scan yields one of:
 | Bare identifier | `PACK-000123` | Passed to lookup layers |
 
 ```python
-from battery_worldcup.passport import parse_carrier
+from battery_value.passport import parse_carrier
 
 carrier = parse_carrier("https://id.gs1.org/01/09506000134376/21/AB123")
 carrier.kind            # CarrierKind.GS1_DIGITAL_LINK
@@ -54,7 +54,7 @@ names. It flattens the whole document and matches every leaf against an alias
 table, preferring exact key matches over path suffixes over substrings.
 
 ```python
-from battery_worldcup.passport import PassportResolver
+from battery_value.passport import PassportResolver
 
 passport = PassportResolver().from_document(anything_json)
 passport.rated_kwh
@@ -115,7 +115,7 @@ Missing energy or chemistry is often recoverable from the
 For carriers holding only an identifier, plug in a source that can resolve it:
 
 ```python
-from battery_worldcup.passport import PassportLookup, PassportResolver
+from battery_value.passport import PassportLookup, PassportResolver
 
 class FleetLookup(PassportLookup):
     def lookup(self, carrier):
@@ -127,15 +127,25 @@ resolver = PassportResolver(lookups=[FleetLookup()])
 
 ## Decoding QR images
 
-The browser UI decodes client-side with the platform `BarcodeDetector` API and
-posts the payload as text, which keeps the common path dependency-free.
+The browser decodes with the platform `BarcodeDetector` API where available,
+which keeps the common path off the server entirely.
 
-Server-side decoding is optional:
+Server-side decoding covers everything else — notably iOS Safari, which has no
+`BarcodeDetector`. It ships with the `api` extra, because photographing the
+code is the main way a phone user reaches this module:
 
 ```bash
-pip install 'battery-worldcup[scan]'
-bwc value --image pack-label.jpg
+pip install -e '.[api]'          # includes photo decoding
+bv value --image pack-label.jpg
 ```
 
-Without the extra, `/v1/value/image` returns 501 with instructions, and the rest
-of the API is unaffected.
+It retries rather than giving up after one pass: greyscale, 2x upscale, Otsu
+and adaptive thresholding, sharpening, then a rotation sweep. The rotation step
+grows the canvas instead of rotating in place, because clipping a QR code's
+finder patterns makes it permanently undecodable.
+
+`GET /v1/health` reports `photo_decoding` so a client can tell whether the
+fallback is available. Without it, `/v1/decode` and `/v1/value/image` return
+501 with instructions and the rest of the API is unaffected.
+
+See [end-user.md](end-user.md) for how the two decode paths fit together.

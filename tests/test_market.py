@@ -7,16 +7,16 @@ from datetime import date, timedelta
 import httpx
 import pytest
 
-from battery_worldcup.market.cache import PriceCache
-from battery_worldcup.market.fx import FxRates, fallback_rates, parse_ecb_xml
-from battery_worldcup.market.providers.baseline import BaselineProvider, system_price
-from battery_worldcup.market.providers.csv_override import CsvOverrideProvider
-from battery_worldcup.market.providers.exchange import metals_api, yahoo_provider
-from battery_worldcup.market.providers.http_json import JsonPathError, extract_path
-from battery_worldcup.market.providers.manual import ManualProvider
-from battery_worldcup.market.resolver import build_resolver
-from battery_worldcup.market.types import PriceQuality, PriceQuote
-from battery_worldcup.units import MassUnit
+from battery_value.market.cache import PriceCache
+from battery_value.market.fx import FxRates, fallback_rates, parse_ecb_xml
+from battery_value.market.providers.baseline import BaselineProvider, system_price
+from battery_value.market.providers.csv_override import CsvOverrideProvider
+from battery_value.market.providers.exchange import metals_api, yahoo_provider
+from battery_value.market.providers.http_json import JsonPathError, extract_path
+from battery_value.market.providers.manual import ManualProvider
+from battery_value.market.resolver import build_resolver
+from battery_value.market.types import PriceQuality, PriceQuote
+from battery_value.units import MassUnit
 
 ECB_XML = """<?xml version="1.0" encoding="UTF-8"?>
 <gesmes:Envelope xmlns:gesmes="http://www.gesmes.org/xml/2002-08-01"

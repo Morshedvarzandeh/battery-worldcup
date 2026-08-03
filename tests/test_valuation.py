@@ -6,11 +6,11 @@ from datetime import date
 
 import pytest
 
-from battery_worldcup.errors import ValuationError
-from battery_worldcup.market.resolver import build_resolver
-from battery_worldcup.valuation import Pathway, ValuationConfig, ValuationEngine
-from battery_worldcup.valuation.health import HealthSource, assess_health
-from battery_worldcup.materials import resolve_chemistry
+from battery_value.errors import ValuationError
+from battery_value.market.resolver import build_resolver
+from battery_value.valuation import Pathway, ValuationConfig, ValuationEngine
+from battery_value.valuation.health import HealthSource, assess_health
+from battery_value.materials import resolve_chemistry
 
 VALUATION_DATE = date(2026, 8, 1)
 
@@ -122,7 +122,10 @@ class TestPathwayEligibility:
         valuation = engine.value(passport, as_of=VALUATION_DATE)
         reuse = valuation.pathway(Pathway.REUSE)
         assert not reuse.eligible
-        assert any("state of health" in blocker for blocker in reuse.blockers)
+        # Blockers are read by battery owners, so they must name the actual
+        # figure and the threshold in plain words rather than jargon.
+        assert any("health is 55%" in blocker for blocker in reuse.blockers)
+        assert any("75%" in blocker for blocker in reuse.blockers)
 
     def test_damaged_pack_costs_more_to_move(self, engine, passports):
         def recycling_cost(condition):
@@ -152,7 +155,7 @@ class TestPathwayEligibility:
         valuation = engine.value(passport, as_of=VALUATION_DATE)
         parts = valuation.pathway(Pathway.PARTS_OUT)
         assert not parts.eligible
-        assert any("not identified" in blocker for blocker in parts.blockers)
+        assert any("could not identify" in blocker for blocker in parts.blockers)
 
 
 class TestValuationArithmetic:
@@ -195,7 +198,7 @@ class TestValuationArithmetic:
             line for line in recycling.lines if line.label.startswith("Co ")
         )
         quote = valuation.prices.get("cobalt_sulphate")
-        from battery_worldcup.materials import load_recovery
+        from battery_value.materials import load_recovery
 
         recovery = load_recovery().get("hydrometallurgical").recovery_for("Co")
         expected = 10.0 * quote.price_per_kg_contained() * recovery.value_yield

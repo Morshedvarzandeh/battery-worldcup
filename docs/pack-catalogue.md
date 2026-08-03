@@ -34,8 +34,8 @@ matches enrich a passport. The negative term matters: a 200 kWh pack labelled
 "Nissan Leaf" is not a Leaf, whatever the label says.
 
 ```bash
-bwc packs                      # list everything
-bwc packs --search bmw         # filter
+bv packs                      # list everything
+bv packs --search bmw         # filter
 curl localhost:8000/v1/packs/nissan-leaf-ze1-40
 ```
 
@@ -63,7 +63,7 @@ The passport is the authority. Catalogue values fill only fields the passport
 left empty, and every substitution is recorded:
 
 ```python
-from battery_worldcup.packs import build_pack_resolver, enrich_passport
+from battery_value.packs import build_pack_resolver, enrich_passport
 
 match = build_pack_resolver().find(passport)
 result = enrich_passport(passport, match)
@@ -86,7 +86,7 @@ Three layers, consulted before the bundled catalogue.
 Point at a directory of JSON files. Each holds one model object or a list.
 
 ```bash
-export BWC_PACK_CATALOGUE_DIR=/etc/battery-worldcup/packs
+export BV_PACK_CATALOGUE_DIR=/etc/battery-value/packs
 ```
 
 ```json
@@ -132,7 +132,7 @@ To give explicit components, add a `components` array:
 ### A remote service
 
 ```bash
-export BWC_PACK_API_URL=https://fleet.internal/api/packs
+export BV_PACK_API_URL=https://fleet.internal/api/packs
 ```
 
 Called with `manufacturer`, `model`, `vehicle_model`, `gtin` and `rated_kwh`
@@ -141,7 +141,7 @@ query parameters; should return a model object or `{"models": [...]}`.
 ### A custom layer
 
 ```python
-from battery_worldcup.packs import PackDataProvider, PackMatch, build_pack_resolver
+from battery_value.packs import PackDataProvider, PackMatch, build_pack_resolver
 
 class FleetDatabaseProvider(PackDataProvider):
     key = "fleet_db"

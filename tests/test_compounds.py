@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from battery_worldcup.compounds import (
+from battery_value.compounds import (
     TRADED_FORMS,
     FormulaError,
     get_traded_form,

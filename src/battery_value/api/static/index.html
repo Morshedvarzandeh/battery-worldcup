@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>What is your battery worth?</title>
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f2f4;
+    --border: #dee2e7;
+    --text: #16191d;
+    --muted: #5d6873;
+    --accent: #0b6b4f;
+    --accent-soft: #e6f2ee;
+    --positive: #0b6b4f;
+    --negative: #a3352c;
+    --negative-soft: #fbeceb;
+    --warn-bg: #fdf7e6;
+    --warn-border: #e9dcb0;
+    --warn-text: #7d6318;
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13171b; --surface: #1b2026; --surface-2: #222831; --border: #2f3841;
+      --text: #e7edf3; --muted: #9aa7b4; --accent: #4ec99a; --accent-soft: #133026;
+      --positive: #4ec99a; --negative: #f08a80; --negative-soft: #33211f;
+      --warn-bg: #2b2618; --warn-border: #4b4229; --warn-text: #d8bd6a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 18px 72px; }
+
+  header { margin-bottom: 26px; }
+  h1 { font-size: 1.75rem; line-height: 1.25; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0; font-size: 1.02rem; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+  }
+  .card h2 {
+    font-size: 1.12rem; margin: 0 0 14px; letter-spacing: -0.01em; font-weight: 620;
+  }
+  .card h2.quiet {
+    font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--muted); font-weight: 600;
+  }
+
+  button {
+    font: inherit; font-weight: 550; padding: 13px 18px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer; min-height: 48px;
+  }
+  button:hover:not(:disabled) { border-color: var(--accent); }
+  button:disabled { opacity: 0.5; cursor: not-allowed; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button.big { font-size: 1.05rem; padding: 16px 22px; min-height: 56px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .stack { display: flex; flex-direction: column; gap: 10px; }
+
+  /* Phones are the main way this gets used, so touch targets go full width
+     and the primary action is never below the fold. */
+  @media (max-width: 560px) {
+    .wrap { padding: 22px 14px 56px; }
+    h1 { font-size: 1.5rem; }
+    .card { padding: 18px 16px; }
+    .row > button, .row > .grow { flex: 1 1 100%; }
+    .row > select { flex: 1 1 100%; width: 100%; }
+  }
+
+  textarea, select {
+    font: inherit; width: 100%; padding: 10px 12px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  textarea { font-family: var(--mono); font-size: 13px; min-height: 84px; resize: vertical; }
+  label { display: block; font-size: 0.88rem; color: var(--muted); margin: 16px 0 6px; }
+  #video { width: 100%; max-height: 300px; border-radius: 9px; background: #000;
+           display: none; object-fit: cover; margin-top: 12px; }
+  #video.live { display: block; }
+
+  /* --- the answer --- */
+  .answer { text-align: center; padding: 30px 22px; }
+  .amount {
+    font-size: clamp(2.6rem, 12vw, 3.6rem); font-weight: 680; line-height: 1.05;
+    letter-spacing: -0.03em; color: var(--positive); font-variant-numeric: tabular-nums;
+  }
+  .amount.cost { color: var(--negative); }
+  .headline { font-size: 1.08rem; margin: 14px auto 0; max-width: 48ch; }
+  .range { color: var(--muted); font-size: 0.95rem; margin-top: 12px; }
+
+  .band {
+    display: inline-flex; align-items: center; gap: 8px; margin-top: 18px;
+    padding: 7px 14px; border-radius: 999px; font-size: 0.9rem; font-weight: 560;
+    background: var(--accent-soft); color: var(--accent);
+  }
+  .band.fair { background: var(--warn-bg); color: var(--warn-text); border: 1px solid var(--warn-border); }
+  .band.weak { background: var(--negative-soft); color: var(--negative); }
+  .band-note { color: var(--muted); font-size: 0.9rem; margin: 10px auto 0; max-width: 52ch; }
+
+  .facts { display: flex; gap: 7px; flex-wrap: wrap; justify-content: center; margin-top: 20px; }
+  .fact {
+    font-size: 0.84rem; padding: 5px 12px; border-radius: 999px;
+    background: var(--surface-2); color: var(--muted); font-weight: 520;
+  }
+
+  /* --- options --- */
+  .option {
+    border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px;
+    margin-bottom: 10px; background: var(--surface);
+  }
+  .option:last-child { margin-bottom: 0; }
+  .option.best { border-color: var(--accent); background: var(--accent-soft); }
+  .option.out { opacity: 0.72; }
+  .option-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 14px; flex-wrap: wrap;
+  }
+  .option-name { font-weight: 600; font-size: 1.02rem; }
+  .option-value {
+    font-weight: 660; font-variant-numeric: tabular-nums; white-space: nowrap;
+    font-size: 1.08rem;
+  }
+  .option-value.cost { color: var(--negative); }
+  .option-value.na { color: var(--muted); font-weight: 500; font-size: 0.92rem; }
+  .option-why { color: var(--muted); font-size: 0.92rem; margin: 7px 0 0; }
+  .best-flag {
+    display: block; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase; color: var(--accent); margin-bottom: 4px;
+  }
+
+  ul.plain { margin: 0; padding-left: 20px; }
+  ul.plain li { margin-bottom: 9px; }
+  ul.plain li:last-child { margin-bottom: 0; }
+
+  /* --- technical detail, folded away by default --- */
+  .tech summary {
+    cursor: pointer; color: var(--accent); font-weight: 550; font-size: 0.94rem;
+    padding: 4px 0; list-style: none;
+  }
+  .tech summary::-webkit-details-marker { display: none; }
+  .tech summary::before { content: "\25B8  "; }
+  .tech[open] summary::before { content: "\25BE  "; }
+  .tech-body h3 {
+    font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.07em;
+    color: var(--muted); margin: 22px 0 8px; font-weight: 600;
+  }
+  .tech-body h3:first-child { margin-top: 14px; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid var(--border); }
+  th { color: var(--muted); font-weight: 600; font-size: 0.75rem;
+       text-transform: uppercase; letter-spacing: 0.05em; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums;
+                   font-family: var(--mono); font-size: 0.84rem; }
+  tr.total td { font-weight: 660; background: var(--surface-2); }
+  .scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .detail { color: var(--muted); font-size: 0.8rem; }
+
+  .warn {
+    background: var(--warn-bg); border: 1px solid var(--warn-border);
+    border-radius: 9px; padding: 12px 14px; margin-bottom: 9px; font-size: 0.92rem;
+  }
+  .warn.err { background: var(--negative-soft); border-color: var(--negative); color: var(--negative); }
+  .hidden { display: none; }
+  .spinner {
+    display: inline-block; width: 14px; height: 14px; vertical-align: -2px;
+    border: 2px solid var(--border); border-top-color: var(--accent);
+    border-radius: 50%; animation: spin 0.7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  footer { color: var(--muted); font-size: 0.86rem; margin-top: 30px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>What is your battery worth?</h1>
+  <p class="sub">Scan the passport code on your battery pack. We will tell you what
+     it is worth today, and the best thing to do with it.</p>
+</header>
+
+<div class="card">
+  <div class="stack">
+    <button id="btn-photo" class="primary big">Take a photo of the code</button>
+    <div class="row">
+      <button id="btn-camera" class="hidden">Scan without a photo</button>
+      <button id="btn-stop" class="hidden">Stop camera</button>
+      <button id="btn-sample">Try an example</button>
+    </div>
+  </div>
+
+  <!-- capture="environment" makes a phone open the rear camera straight away
+       rather than the photo library. -->
+  <input type="file" id="file-image" accept="image/*" capture="environment" class="hidden">
+  <video id="video" playsinline muted></video>
+  <p id="camera-note" class="detail"></p>
+
+  <details style="margin-top:16px">
+    <summary class="detail" style="cursor:pointer">Type it in instead</summary>
+    <label for="payload">Paste the code's text, a link, or the passport file</label>
+    <textarea id="payload" spellcheck="false"
+      placeholder="https://dpp.example.com/battery/AB123"></textarea>
+    <div class="row" style="margin-top: 12px;">
+      <select id="currency" aria-label="Currency" style="width:auto">
+        <option>EUR</option><option>USD</option><option>GBP</option>
+        <option>CHF</option><option>SEK</option><option>NOK</option><option>PLN</option>
+      </select>
+      <button id="btn-value" class="primary">Find out</button>
+    </div>
+  </details>
+  <p id="status" class="detail" style="margin-bottom:0"></p>
+</div>
+
+<div id="messages"></div>
+<div id="result" class="hidden"></div>
+
+<footer>
+  This is an estimate, not an offer. Get a quote from a buyer or recycler before
+  you decide anything.
+</footer>
+
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+const SAMPLE = {
+  batteryPassport: {
+    generalInformation: {
+      manufacturerName: "Automotive Energy Supply Corporation",
+      vehicleModel: "Nissan Leaf ZE1 40 kWh",
+      manufacturingDate: "2019-03-14",
+      batteryCategory: "EV battery",
+      batteryMass: { value: 303, unit: "kg" }
+    },
+    performanceAndDurability: {
+      ratedCapacity: { value: 40, unit: "kWh" },
+      nominalVoltage: { value: 350, unit: "V" },
+      stateOfHealth: { value: 81, unit: "%" },
+      numberOfFullCycles: 850,
+      measurementDate: "2026-06-30"
+    },
+    materialComposition: {
+      batteryChemistry: "Li-NMC 532",
+      criticalRawMaterials: [
+        { substance: "Cobalt", massKg: 7.1 },
+        { substance: "Lithium", massKg: 4.0 },
+        { substance: "Nickel", massKg: 17.4 }
+      ]
+    },
+    circularity: { safetyFlags: [] }
+  }
+};
+
+let stream = null;
+let scanning = false;
+let lastRequest = null;   // reused when building a shareable report
+
+function esc(text) {
+  return String(text).replace(/[&<>"']/g, (c) => (
+    { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]
+  ));
+}
+
+function message(text, isError) {
+  const div = document.createElement("div");
+  div.className = "warn" + (isError ? " err" : "");
+  div.textContent = text;
+  $("messages").appendChild(div);
+}
+
+function clearMessages() { $("messages").innerHTML = ""; }
+
+function setBusy(busy, text) {
+  $("btn-value").disabled = busy;
+  $("status").innerHTML = busy
+    ? '<span class="spinner"></span> ' + (text || "Working it out…")
+    : (text || "");
+}
+
+// -- camera ----------------------------------------------------------------
+
+async function startCamera() {
+  if (!("BarcodeDetector" in window)) {
+    $("camera-note").textContent =
+      "This browser cannot read codes with the camera. Upload a photo of the "
+      + "code instead — that works everywhere.";
+    return;
+  }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: "environment" }
+    });
+  } catch (err) {
+    $("camera-note").textContent = "Camera unavailable: " + err.message;
+    return;
+  }
+
+  const video = $("video");
+  video.srcObject = stream;
+  video.classList.add("live");
+  await video.play();
+
+  $("btn-camera").classList.add("hidden");
+  $("btn-stop").classList.remove("hidden");
+  $("camera-note").textContent = "Point the camera at the code on your battery.";
+
+  const detector = new BarcodeDetector({ formats: ["qr_code"] });
+  scanning = true;
+
+  const tick = async () => {
+    if (!scanning) return;
+    try {
+      const codes = await detector.detect(video);
+      if (codes.length) {
+        $("payload").value = codes[0].rawValue;
+        stopCamera();
+        $("camera-note").textContent = "Code read.";
+        valuePack();
+        return;
+      }
+    } catch (_) { /* frames between focus attempts fail routinely */ }
+    requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+function stopCamera() {
+  scanning = false;
+  if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+  $("video").classList.remove("live");
+  $("btn-camera").classList.remove("hidden");
+  $("btn-stop").classList.add("hidden");
+}
+
+// -- requests --------------------------------------------------------------
+
+function buildRequest() {
+  const raw = $("payload").value.trim();
+  if (!raw) throw new Error("Scan a code first, or paste its text in the box.");
+  const body = { currency: $("currency").value };
+  try { body.document = JSON.parse(raw); }
+  catch (_) { body.payload = raw; }
+  return body;
+}
+
+async function valuePack() {
+  clearMessages();
+  let body;
+  try { body = buildRequest(); }
+  catch (err) { message(err.message, true); return; }
+
+  setBusy(true);
+  try {
+    const response = await fetch("/v1/value", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      message(data.detail || ("Something went wrong (" + response.status + ")."), true);
+      $("result").classList.add("hidden");
+      return;
+    }
+    lastRequest = body;
+    render(data);
+  } catch (err) {
+    message("Could not reach the service: " + err.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+/** Decode a photographed code in the browser, so a phone on a weak signal
+ *  sends a few hundred bytes of text instead of a multi-megabyte image. */
+async function decodeLocally(file) {
+  if (!("BarcodeDetector" in window)) return null;
+  try {
+    const bitmap = await createImageBitmap(file);
+    const codes = await new BarcodeDetector({ formats: ["qr_code"] }).detect(bitmap);
+    bitmap.close();
+    return codes.length ? codes[0].rawValue : null;
+  } catch (_) {
+    return null;   // fall through to the server, which decodes more stubbornly
+  }
+}
+
+async function valueImage(file) {
+  clearMessages();
+  setBusy(true, "Reading the code…");
+  try {
+    const decoded = await decodeLocally(file);
+    if (decoded) {
+      $("payload").value = decoded;
+      await valuePack();
+      return;
+    }
+
+    setBusy(true, "Uploading the photo…");
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch("/v1/decode", { method: "POST", body: form });
+    const data = await response.json();
+    if (!response.ok) {
+      message(data.detail || "We could not read a code in that photo.", true);
+      return;
+    }
+    $("payload").value = data.payload;
+    await valuePack();
+  } catch (err) {
+    message("Could not read that photo: " + err.message, true);
+  } finally {
+    setBusy(false);
+  }
+}
+
+// -- saving and sharing ----------------------------------------------------
+
+function filenameFrom(response, fallback) {
+  const header = response.headers.get("content-disposition") || "";
+  const match = header.match(/filename="?([^"]+)"?/);
+  return match ? match[1] : fallback;
+}
+
+async function fetchReport() {
+  if (!lastRequest) {
+    throw new Error("Scan the code again to build a report.");
+  }
+  const response = await fetch("/v1/report", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(lastRequest)
+  });
+  if (!response.ok) throw new Error("The report could not be created.");
+  const blob = await response.blob();
+  return { blob, name: filenameFrom(response, "battery-value-report.html") };
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = name;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function shareReport() {
+  clearMessages();
+  try {
+    const { blob, name } = await fetchReport();
+    const file = new File([blob], name, { type: "text/html" });
+
+    // On a phone this opens the normal share sheet, so the report can go
+    // straight into WhatsApp, email or Files.
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "Battery value report" });
+      return;
+    }
+    downloadBlob(blob, name);
+  } catch (err) {
+    if (err && err.name === "AbortError") return;   // user dismissed the sheet
+    message(err.message || "Could not share the report.", true);
+  }
+}
+
+async function saveReport() {
+  clearMessages();
+  try {
+    const { blob, name } = await fetchReport();
+    downloadBlob(blob, name);
+  } catch (err) {
+    message(err.message || "Could not save the report.", true);
+  }
+}
+
+// -- rendering -------------------------------------------------------------
+
+function renderAnswer(data) {
+  const plain = data.plain;
+  const isCost = data.residual_value.amount < 0;
+  // A negative residual value is a disposal cost. Show it as a positive
+  // amount of money leaving the owner's pocket rather than a minus sign
+  // they have to interpret.
+  const shown = isCost ? data.residual_value.formatted.replace("-", "")
+                       : data.residual_value.formatted;
+
+  let html = '<div class="card answer">';
+  html += '<div class="amount' + (isCost ? " cost" : "") + '">' + esc(shown) + "</div>";
+  html += '<p class="headline">' + esc(plain.headline) + "</p>";
+
+  if (data.value_range && !isCost) {
+    html += '<p class="range">Most likely between <strong>'
+          + esc(data.value_range.low.formatted) + "</strong> and <strong>"
+          + esc(data.value_range.high.formatted) + "</strong></p>";
+  }
+
+  html += '<div><span class="band ' + esc(plain.confidence.tone) + '">'
+        + esc(plain.confidence.label) + "</span></div>";
+  html += '<p class="band-note">' + esc(plain.confidence.explanation) + "</p>";
+
+  html += '<div class="facts">';
+  html += '<span class="fact">' + esc(data.battery.label) + "</span>";
+  html += '<span class="fact">' + data.battery.rated_kwh + " kWh</span>";
+  html += '<span class="fact">' + Math.round(data.battery.state_of_health * 100)
+        + "% health</span>";
+  html += '<span class="fact">' + esc(plain.chemistry) + "</span>";
+  html += '<span class="fact">' + data.bill_of_materials.pack_mass_kg + " kg</span>";
+  html += "</div></div>";
+  return html;
+}
+
+function renderActions() {
+  return '<div class="card"><h2>Keep a copy</h2>'
+    + '<p class="option-why" style="margin:0 0 14px">A single file with the full '
+    + "workings, ready to send to a garage, buyer or recycler. It opens in any "
+    + 'browser and prints to PDF.</p>'
+    + '<div class="row">'
+    + '<button id="btn-share" class="primary">Share the report</button>'
+    + '<button id="btn-save">Save it</button>'
+    + "</div></div>";
+}
+
+function renderOptions(data) {
+  let html = '<div class="card"><h2>What you can do with it</h2>';
+
+  const ordered = data.pathways.slice().sort((a, b) => {
+    if (a.eligible !== b.eligible) return a.eligible ? -1 : 1;
+    return b.net_value.amount - a.net_value.amount;
+  });
+
+  for (const option of ordered) {
+    const isBest = option.pathway === data.recommended_pathway;
+    const isCost = option.eligible && option.net_value.amount < 0;
+    html += '<div class="option' + (isBest ? " best" : "")
+          + (option.eligible ? "" : " out") + '">';
+
+    if (isBest) html += '<span class="best-flag">Best option</span>';
+    html += '<div class="option-head">';
+    html += '<span class="option-name">' + esc(option.friendly_label) + "</span>";
+
+    if (option.eligible) {
+      html += '<span class="option-value' + (isCost ? " cost" : "") + '">'
+            + esc(option.net_value.formatted) + "</span>";
+    } else {
+      html += '<span class="option-value na">Not possible</span>';
+    }
+    html += "</div>";
+
+    if (option.eligible) {
+      html += '<p class="option-why">' + esc(option.explanation) + "</p>";
+    } else if (option.blockers.length) {
+      html += '<p class="option-why">' + esc(option.blockers[0]) + "</p>";
+    }
+    html += "</div>";
+  }
+
+  html += "</div>";
+  return html;
+}
+
+function renderWhy(data) {
+  const plain = data.plain;
+  let html = '<div class="card"><h2>Why this number</h2><ul class="plain">';
+  for (const reason of plain.why) html += "<li>" + esc(reason) + "</li>";
+  html += "</ul>";
+
+  if (plain.how_to_improve.length) {
+    html += '<h2 class="quiet" style="margin:22px 0 10px">For a sharper estimate</h2>';
+    html += '<ul class="plain">';
+    for (const tip of plain.how_to_improve) html += "<li>" + esc(tip) + "</li>";
+    html += "</ul>";
+  }
+  html += "</div>";
+  return html;
+}
+
+function renderTechnical(data) {
+  const best = data.pathways.find((p) => p.pathway === data.recommended_pathway);
+
+  let html = '<div class="card"><details class="tech"><summary>'
+           + 'Show the technical detail</summary><div class="tech-body">';
+
+  if (best) {
+    html += "<h3>How " + esc(best.label.toLowerCase()) + " adds up</h3>";
+    html += '<div class="scroll"><table>';
+    for (const line of best.lines) {
+      const sign = line.kind === "revenue" ? "+" : "−";
+      html += "<tr><td>" + sign + " " + esc(line.label);
+      if (line.detail) html += '<div class="detail">' + esc(line.detail) + "</div>";
+      html += "</td><td class='num'>" + esc(line.amount.formatted) + "</td></tr>";
+    }
+    html += "<tr class='total'><td>Net</td><td class='num'>"
+          + esc(best.net_value.formatted) + "</td></tr></table></div>";
+
+    if (best.assumptions.length) {
+      html += "<h3>Assumptions</h3><ul class='plain detail'>";
+      for (const a of best.assumptions) html += "<li>" + esc(a) + "</li>";
+      html += "</ul>";
+    }
+  }
+
+  html += "<h3>Materials in the pack</h3><div class='scroll'><table>";
+  html += "<tr><th>Element</th><th class='num'>kg</th><th>Where this came from</th></tr>";
+  for (const line of data.bill_of_materials.lines) {
+    html += "<tr><td>" + esc(line.element) + "</td><td class='num'>"
+          + line.mass_kg.toFixed(2) + "</td><td class='detail'>"
+          + esc(line.basis) + "</td></tr>";
+  }
+  html += "<tr><td>inert</td><td class='num'>"
+        + data.bill_of_materials.inert_mass_kg.toFixed(2)
+        + "</td><td class='detail'>separator, binder, electrolyte, plastics</td></tr>";
+  html += "</table></div>";
+
+  html += "<h3>Market prices used</h3><div class='scroll'><table>";
+  html += "<tr><th>Material</th><th class='num'>Price</th>"
+        + "<th class='num'>Per kg of metal</th><th>Source</th></tr>";
+  for (const q of data.prices.quotes) {
+    html += "<tr><td>" + esc(q.form) + "</td>";
+    html += "<td class='num'>" + q.price.toLocaleString(undefined, { maximumFractionDigits: 2 })
+          + " " + esc(q.currency) + "/" + esc(q.unit) + "</td>";
+    html += "<td class='num'>" + q.price_per_kg_contained.toFixed(2) + "</td>";
+    html += "<td class='detail'>" + esc(q.source) + " · " + esc(q.as_of)
+          + "</td></tr>";
+  }
+  html += "</table></div>";
+
+  if (data.sensitivity.length) {
+    html += "<h3>What moves the number</h3><div class='scroll'><table>";
+    for (const factor of data.sensitivity) {
+      html += "<tr><td>" + esc(factor.name) + "</td><td class='num'>"
+            + esc(factor.low.formatted) + " to " + esc(factor.high.formatted)
+            + "</td></tr>";
+    }
+    html += "</table></div>";
+  }
+
+  if (data.warnings.length) {
+    html += "<h3>Caveats</h3>";
+    for (const w of data.warnings) html += '<div class="warn">' + esc(w) + "</div>";
+  }
+
+  html += "</div></details></div>";
+  return html;
+}
+
+function render(data) {
+  const result = $("result");
+  result.innerHTML = renderAnswer(data)
+                   + renderOptions(data)
+                   + renderWhy(data)
+                   + renderActions()
+                   + renderTechnical(data);
+  result.classList.remove("hidden");
+
+  const share = $("btn-share");
+  const save = $("btn-save");
+  if (share) share.addEventListener("click", shareReport);
+  if (save) save.addEventListener("click", saveReport);
+  result.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+// -- wiring ----------------------------------------------------------------
+
+$("btn-photo").addEventListener("click", () => $("file-image").click());
+$("btn-camera").addEventListener("click", startCamera);
+$("btn-stop").addEventListener("click", stopCamera);
+$("btn-value").addEventListener("click", valuePack);
+$("file-image").addEventListener("change", (e) => {
+  if (e.target.files.length) valueImage(e.target.files[0]);
+});
+$("btn-sample").addEventListener("click", () => {
+  $("payload").value = JSON.stringify(SAMPLE, null, 2);
+  valuePack();
+});
+$("payload").addEventListener("keydown", (e) => {
+  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) valuePack();
+});
+
+// Live scanning is a nicety; photographing the code works on every phone,
+// so it stays the primary action and the live button only appears when usable.
+if ("BarcodeDetector" in window) {
+  $("btn-camera").classList.remove("hidden");
+}
+</script>
+</body>
+</html>

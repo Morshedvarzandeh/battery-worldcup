@@ -9,22 +9,22 @@ from __future__ import annotations
 
 import pytest
 
-from battery_worldcup.market.cache import PriceCache
-from battery_worldcup.market.resolver import build_resolver
-from battery_worldcup.passport.resolver import PassportResolver
-from battery_worldcup.valuation.config import ValuationConfig
-from battery_worldcup.valuation.engine import ValuationEngine
+from battery_value.market.cache import PriceCache
+from battery_value.market.resolver import build_resolver
+from battery_value.passport.resolver import PassportResolver
+from battery_value.valuation.config import ValuationConfig
+from battery_value.valuation.engine import ValuationEngine
 
 
 @pytest.fixture(autouse=True)
 def isolated_cache(tmp_path, monkeypatch):
     """Point the price cache at a per-test directory."""
     cache_dir = tmp_path / "cache"
-    monkeypatch.setenv("BWC_CACHE_DIR", str(cache_dir))
+    monkeypatch.setenv("BV_CACHE_DIR", str(cache_dir))
     # Clear any resolver-level env leakage between tests.
-    monkeypatch.delenv("BWC_PRICE_CSV", raising=False)
-    monkeypatch.delenv("BWC_PACK_CATALOGUE_DIR", raising=False)
-    monkeypatch.delenv("BWC_PACK_API_URL", raising=False)
+    monkeypatch.delenv("BV_PRICE_CSV", raising=False)
+    monkeypatch.delenv("BV_PACK_CATALOGUE_DIR", raising=False)
+    monkeypatch.delenv("BV_PACK_API_URL", raising=False)
     monkeypatch.delenv("METALS_API_KEY", raising=False)
     return PriceCache(cache_dir)
 
@@ -100,3 +100,16 @@ def lfp_document():
         "materialComposition": {"batteryChemistry": "LFP"},
         "circularity": {},
     }
+
+
+@pytest.fixture
+def qr_image_bytes(eu_dpp_document):
+    """A real QR image, as a phone camera would produce for a pack sticker."""
+    qrcode = pytest.importorskip("qrcode")
+    import io
+    import json
+
+    payload = json.dumps(eu_dpp_document, separators=(",", ":"))
+    buffer = io.BytesIO()
+    qrcode.make(payload).save(buffer, format="PNG")
+    return buffer.getvalue()

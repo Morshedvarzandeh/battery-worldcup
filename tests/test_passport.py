@@ -6,16 +6,16 @@ import json
 
 import pytest
 
-from battery_worldcup.errors import PassportError, UnknownCarrierError
-from battery_worldcup.passport import (
+from battery_value.errors import PassportError, UnknownCarrierError
+from battery_value.passport import (
     BatteryPassport,
     CarrierKind,
     PassportResolver,
     parse_carrier,
     parse_document,
 )
-from battery_worldcup.passport.adapters import detect_adapter
-from battery_worldcup.passport.models import PackCondition
+from battery_value.passport.adapters import detect_adapter
+from battery_value.passport.models import PackCondition
 
 
 class TestCarrierParsing:

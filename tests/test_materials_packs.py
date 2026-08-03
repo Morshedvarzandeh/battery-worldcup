@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from battery_worldcup.materials import (
+from battery_value.materials import (
     UnknownChemistryError,
     build_bom,
     load_chemistries,
@@ -14,13 +14,13 @@ from battery_worldcup.materials import (
     resolve_chemistry,
     try_resolve_chemistry,
 )
-from battery_worldcup.packs import (
+from battery_value.packs import (
     JsonDirectoryProvider,
     build_pack_resolver,
     enrich_passport,
     load_catalogue,
 )
-from battery_worldcup.packs.providers import PackResolver
+from battery_value.packs.providers import PackResolver
 
 
 class TestChemistryResolution:
@@ -84,7 +84,7 @@ class TestRecoveryData:
         assert load_recovery().get("pyrometallurgical").recovery_for("Li").recovery_rate == 0
 
     def test_every_traded_form_referenced_is_priceable(self):
-        from battery_worldcup.compounds import TRADED_FORMS
+        from battery_value.compounds import TRADED_FORMS
 
         for process in load_recovery().processes.values():
             for element in process.elements.values():

@@ -189,6 +189,9 @@ Two shocks are re-run through the whole pipeline, including pathway re-selection
 Which one dominates is itself informative: it tells you whether to spend effort
 on better price data or on better health measurement.
 
+For how these numbers are presented to a non-specialist, see
+[end-user.md](end-user.md).
+
 ## Known limitations
 
 - **The pack catalogue is small.** Twenty models covering common European EVs.

@@ -47,7 +47,7 @@ Providers are tried in order; the first that answers wins.
 | 5 | `baseline`   | `baseline`  | no  | Everything, as a dated snapshot |
 
 ```python
-from battery_worldcup.market import build_resolver
+from battery_value.market import build_resolver
 
 resolver = build_resolver(
     currency="EUR",
@@ -59,7 +59,7 @@ resolver = build_resolver(
 Inspect what is actually wired up:
 
 ```bash
-bwc prices                    # table of every price and its source
+bv prices                    # table of every price and its source
 curl localhost:8000/v1/providers
 ```
 
@@ -95,8 +95,8 @@ nickel_sulphate,4180,USD,t,2026-07-30,Fastmarkets MB-NI-0246
 ```
 
 ```bash
-export BWC_PRICE_CSV=/etc/battery-worldcup/prices.csv
-bwc value --file passport.json
+export BV_PRICE_CSV=/etc/battery-value/prices.csv
+bv value --file passport.json
 ```
 
 Refresh it on whatever cadence your subscription allows — a nightly cron writing
@@ -139,9 +139,9 @@ Update it by editing the JSON and moving `snapshot_date` forward.
 Any JSON HTTP endpoint can become a provider without writing a class:
 
 ```python
-from battery_worldcup.market import HttpJsonProvider, SymbolSpec, build_resolver
-from battery_worldcup.market.types import PriceQuality
-from battery_worldcup.units import MassUnit
+from battery_value.market import HttpJsonProvider, SymbolSpec, build_resolver
+from battery_value.market.types import PriceQuality
+from battery_value.units import MassUnit
 
 internal = HttpJsonProvider(
     provider_key="internal_desk",
@@ -210,8 +210,8 @@ why the two factors are stored and reported separately.
 ## Checking your setup
 
 ```bash
-bwc prices                      # what is wired up, and how old each price is
-bwc value --file p.json         # warns when prices exceed 45 days old
+bv prices                      # what is wired up, and how old each price is
+bv value --file p.json         # warns when prices exceed 45 days old
 ```
 
 In the API response, `prices.confidence` and `prices.sources_used` tell you the

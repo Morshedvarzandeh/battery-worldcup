@@ -3,9 +3,9 @@ requires = ["setuptools>=68", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "battery-worldcup"
+name = "battery-value"
 version = "0.1.0"
-description = "Scan a battery passport, get the residual value of the pack from live material and system market prices."
+description = "Scan a battery passport and find out what the pack is worth."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
@@ -15,7 +15,15 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "python-multipart>=0.0.9"]
+# The API exists to serve the phone UI, where the main path is photographing
+# the QR code, so server-side image decoding ships with it rather than as an
+# afterthought.
+api = [
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.27",
+    "python-multipart>=0.0.9",
+    "opencv-python-headless>=4.8",
+]
 scan = ["opencv-python-headless>=4.8", "pillow>=10.0"]
 dev = ["pytest>=7.4", "pytest-cov>=4.1"]
 all = [
@@ -28,15 +36,16 @@ all = [
 ]
 
 [project.scripts]
-bwc = "battery_worldcup.cli:main"
+battery-value = "battery_value.cli:main"
+bv = "battery_value.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
-battery_worldcup = ["**/data/*.json", "api/static/*"]
+battery_value = ["**/data/*.json", "api/static/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
-filterwarnings = ["error::DeprecationWarning:battery_worldcup.*"]
+filterwarnings = ["error::DeprecationWarning:battery_value.*"]

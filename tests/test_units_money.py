@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import pytest
 
-from battery_worldcup.errors import UnitError
-from battery_worldcup.money import CurrencyMismatchError, Money, money_sum
-from battery_worldcup.units import (
+from battery_value.errors import UnitError
+from battery_value.money import CurrencyMismatchError, Money, money_sum
+from battery_value.units import (
     MassUnit,
     convert_energy,
     convert_mass,
