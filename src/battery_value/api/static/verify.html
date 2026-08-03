@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Check a battery certificate</title>
+<link rel="icon" href="/favicon.ico" type="image/svg+xml">
+<style>
+  :root {
+    --bg: #f5f6f8; --surface: #fff; --surface-2: #f0f2f4; --border: #dee2e7;
+    --text: #16191d; --muted: #5d6873; --accent: #0b6b4f; --accent-soft: #e6f2ee;
+    --negative: #a3352c; --negative-soft: #fbeceb;
+    --warn-bg: #fdf7e6; --warn-border: #e9dcb0; --warn-text: #7d6318;
+    --radius: 12px;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13171b; --surface: #1b2026; --surface-2: #222831; --border: #2f3841;
+      --text: #e7edf3; --muted: #9aa7b4; --accent: #4ec99a; --accent-soft: #133026;
+      --negative: #f08a80; --negative-soft: #33211f;
+      --warn-bg: #2b2618; --warn-border: #4b4229; --warn-text: #d8bd6a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.6 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  .wrap { max-width: 780px; margin: 0 auto; padding: 32px 18px 72px; }
+  h1 { font-size: 1.7rem; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .sub { color: var(--muted); margin: 0 0 22px; max-width: 60ch; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 22px; margin-bottom: 18px;
+  }
+  .card h2 { font-size: 1.1rem; margin: 0 0 14px; font-weight: 620; }
+  .card h2.quiet { font-size: 0.78rem; text-transform: uppercase;
+                   letter-spacing: 0.08em; color: var(--muted); font-weight: 600; }
+  button {
+    font: inherit; font-weight: 550; padding: 12px 18px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text); cursor: pointer; min-height: 48px;
+  }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  input, textarea {
+    font: inherit; width: 100%; padding: 12px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--bg); color: var(--text);
+  }
+  input.ref { font-family: var(--mono); text-transform: uppercase; }
+  textarea { font-family: var(--mono); font-size: 12.5px; min-height: 130px;
+             resize: vertical; }
+  label { display: block; font-size: 0.85rem; color: var(--muted); margin: 14px 0 6px; }
+
+  .verdict { border-radius: var(--radius); padding: 20px 22px; margin-bottom: 18px;
+             border: 1px solid; }
+  .verdict.ok { background: var(--accent-soft); border-color: var(--accent);
+                color: var(--accent); }
+  .verdict.no { background: var(--negative-soft); border-color: var(--negative);
+                color: var(--negative); }
+  .verdict h2 { margin: 0 0 6px; font-size: 1.25rem; }
+  .verdict p { margin: 0; font-size: 0.95rem; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+  th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--border);
+           vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 0.75rem;
+       text-transform: uppercase; letter-spacing: 0.05em; }
+  .basis { font-size: 0.76rem; padding: 2px 9px; border-radius: 999px;
+           white-space: nowrap; font-weight: 620; }
+  .basis.verified, .basis.measured { background: var(--accent-soft); color: var(--accent); }
+  .basis.computed { background: var(--surface-2); color: var(--muted); }
+  .basis.declared { background: var(--warn-bg); color: var(--warn-text); }
+  .basis.absent { background: var(--negative-soft); color: var(--negative); }
+  .muted { color: var(--muted); font-size: 0.9rem; }
+  .ref { font-family: var(--mono); font-size: 0.86rem; }
+  .hidden { display: none !important; }
+  .note { border: 1px solid var(--warn-border); background: var(--warn-bg);
+          color: var(--warn-text); border-radius: 9px; padding: 12px 14px;
+          font-size: 0.9rem; margin-top: 12px; }
+  .bar { height: 8px; border-radius: 999px; background: var(--surface-2);
+         overflow: hidden; margin: 8px 0 4px; }
+  .bar span { display: block; height: 100%; background: var(--accent); }
+  @media (max-width: 560px) {
+    .wrap { padding: 22px 14px 56px; }
+    .row > button { flex: 1 1 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Check a battery certificate</h1>
+<p class="sub">
+  Paste a certificate, or look one up by reference. This tells you whether the
+  record is intact and who issued it — before you drive anywhere or pay anyone.
+</p>
+
+<div class="card">
+  <label for="ref">Certificate reference</label>
+  <input id="ref" class="ref" type="text" placeholder="BV-7K2P-M4X9">
+  <div class="row" style="margin-top:12px">
+    <button id="btn-lookup" class="primary">Look it up</button>
+    <button id="btn-paste">I have the file instead</button>
+  </div>
+
+  <div id="paste-box" class="hidden">
+    <label for="doc">Paste the certificate JSON</label>
+    <textarea id="doc" placeholder='{"schema":"battery-value/certificate/1", …}'></textarea>
+    <div class="row" style="margin-top:12px">
+      <button id="btn-verify" class="primary">Check it</button>
+    </div>
+  </div>
+</div>
+
+<div id="out"></div>
+
+<footer class="muted">
+  A signature proves the record has not been altered since it was issued and
+  that it came from the key shown. It does not verify what the manufacturer
+  declared — that is why every line says who said it.
+</footer>
+
+</div>
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"]/g,
+  (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+async function api(path, options) {
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.detail || ("HTTP " + response.status));
+  return data;
+}
+
+function fmt(value, unit) {
+  if (value == null || value === "") return "—";
+  if (typeof value === "object") {
+    return Object.entries(value).map(([k, v]) => k + " " + v + (unit || "")).join(", ");
+  }
+  return esc(value) + (unit ? " " + esc(unit) : "");
+}
+
+function render(certificate, check) {
+  const valid = check.valid;
+  let html = '<div class="verdict ' + (valid ? "ok" : "no") + '">'
+    + "<h2>" + (valid ? "Intact" : "Do not rely on this") + "</h2>"
+    + "<p>" + esc(check.verdict) + "</p></div>";
+
+  html += '<div class="card"><h2>' + esc(certificate.subject.label || "Battery") + "</h2>"
+    + '<div class="muted ref">' + esc(certificate.reference) + " · issued "
+    + esc(String(certificate.issued_at).slice(0, 10))
+    + (check.issuer ? " · " + esc(check.issuer) : "") + "</div>";
+
+  const strength = certificate.evidence_strength ?? check.evidence_strength ?? 0;
+  html += '<h2 class="quiet" style="margin-top:18px">How much of this is evidence</h2>'
+    + '<div class="bar"><span style="width:' + Math.round(strength * 100) + '%"></span></div>'
+    + '<p class="muted">' + esc(check.evidence_note || "") + "</p>";
+  html += "</div>";
+
+  html += '<div class="card"><h2>Who said what</h2><table>'
+    + "<tr><th>Claim</th><th>Value</th><th>Rests on</th></tr>";
+  for (const claim of certificate.claims || []) {
+    html += "<tr><td>" + esc(claim.label) + "</td>"
+      + "<td>" + fmt(claim.value, claim.unit) + "</td>"
+      + '<td><span class="basis ' + esc(claim.basis) + '">'
+      + esc(claim.basis_label) + "</span></td></tr>";
+  }
+  html += "</table>"
+    + '<p class="muted" style="margin-top:12px">' + esc(certificate.attestation || "")
+    + "</p></div>";
+
+  const compliance = certificate.compliance || {};
+  if (compliance.requirements) {
+    const gaps = compliance.requirements.filter((r) => r.is_a_gap);
+    html += '<div class="card"><h2>Against EU 2023/1542</h2>'
+      + "<p>" + esc(compliance.summary || "") + "</p>";
+    if (gaps.length) {
+      html += "<table><tr><th>Missing</th><th>Article</th><th>Whose job</th></tr>";
+      for (const gap of gaps) {
+        html += "<tr><td>" + esc(gap.label) + "</td><td>" + esc(gap.article)
+          + "</td><td>" + esc(gap.owner) + "</td></tr>";
+      }
+      html += "</table>";
+    }
+    const upcoming = compliance.requirements
+      .filter((r) => r.state === "missing" && !r.is_a_gap)
+      .sort((a, b) => a.applies_from.localeCompare(b.applies_from));
+    if (upcoming.length) {
+      html += '<h2 class="quiet" style="margin-top:18px">Not yet due</h2><table>';
+      for (const item of upcoming) {
+        html += "<tr><td>" + esc(item.label) + "</td><td>"
+          + esc(item.applies_from.slice(0, 7)) + "</td></tr>";
+      }
+      html += "</table>";
+    }
+    html += "</div>";
+  }
+
+  const valuation = certificate.valuation || {};
+  if (valuation.residual_value) {
+    html += '<div class="card"><h2>What it was worth when this was issued</h2>'
+      + '<div style="font-size:1.8rem;font-weight:680">'
+      + esc(valuation.residual_value.formatted) + "</div>"
+      + '<p class="muted">Valued ' + esc(String(valuation.valued_at).slice(0, 10))
+      + ". Metal prices move weekly, so this is a statement about that date, not "
+      + "about today.</p></div>";
+  }
+
+  $("out").innerHTML = html;
+  $("out").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+async function lookup() {
+  const reference = $("ref").value.trim();
+  if (!reference) return;
+  $("out").innerHTML = '<div class="card muted">Looking…</div>';
+  try {
+    const certificate = await api("/v1/certificates/" + encodeURIComponent(reference));
+    const check = await api("/v1/certificates/verify", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(certificate),
+    });
+    render(certificate, check);
+  } catch (err) {
+    $("out").innerHTML = '<div class="card note">' + esc(err.message) + "</div>";
+  }
+}
+
+async function verifyPasted() {
+  let certificate;
+  try {
+    certificate = JSON.parse($("doc").value);
+  } catch (err) {
+    $("out").innerHTML = '<div class="card note">That is not valid JSON.</div>';
+    return;
+  }
+  try {
+    const check = await api("/v1/certificates/verify", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(certificate),
+    });
+    render(certificate, check);
+  } catch (err) {
+    $("out").innerHTML = '<div class="card note">' + esc(err.message) + "</div>";
+  }
+}
+
+$("btn-lookup").addEventListener("click", lookup);
+$("btn-paste").addEventListener("click", () => $("paste-box").classList.toggle("hidden"));
+$("btn-verify").addEventListener("click", verifyPasted);
+$("ref").addEventListener("keydown", (e) => { if (e.key === "Enter") lookup(); });
+
+// A QR on a pack can link straight here: /verify#BV-7K2P-M4X9
+if (location.hash.length > 1) {
+  $("ref").value = decodeURIComponent(location.hash.slice(1));
+  lookup();
+}
+</script>
+</body>
+</html>

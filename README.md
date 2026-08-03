@@ -192,6 +192,34 @@ inputs into measurements of what packs actually fetched.
 **[docs/marketplace.md](docs/marketplace.md)** covers the guide price, disposal
 listings, and what the prototype deliberately does not do.
 
+## Proving it, and knowing when to sell
+
+A buyer who cannot check a seller's health claim prices every pack as though it
+might be tired, so good packs never fetch what they are worth. A certificate
+fixes that for the cost of a signature:
+
+```bash
+bv certify BV-7K2P-M4X9 --output certificate.json
+bv verify certificate.json          # anyone can, offline, with no account
+```
+
+Every line says whether it was **measured**, **declared**, **computed** or
+**absent**, because a buyer who cannot tell which is which has to price the whole
+document at its weakest claim. The signature proves the record has not been
+altered — not that the manufacturer told the truth, and it says so.
+
+And because a battery is a wasting asset with a knowable half-life, holding one
+has a price:
+
+```bash
+bv portfolio
+#   value            €24,534  (45 EUR/kWh)
+#   losing           €36 a month  (1.8% a year)
+#   at the cliff     2 pack(s) holding €2,229 drop below resale grade within 2 years
+```
+
+**[docs/economics.md](docs/economics.md)** is why all of this is one product.
+
 ## Getting real market prices
 
 **This is the part that needs your attention before quoting anyone a number.**
@@ -264,6 +292,10 @@ custom-layer API.
   verdict against a cohort, and the two things the layer refuses to say.
 - **[The market](docs/marketplace.md)** — listings that carry their own
   valuation, the price guide, and how sales become observations.
+- **[Why nothing trades](docs/economics.md)** — the transaction costs that keep
+  good packs off the market, and which piece of this removes which one.
+- **[Certificates and compliance](docs/trust.md)** — signed records, who said
+  what, and the EU 2023/1542 readiness view.
 - **[Methodology](docs/methodology.md)** — how each of the four values is
   calculated, what drives confidence, and the known limitations.
 - **[Market data](docs/market-data.md)** — every price source, the

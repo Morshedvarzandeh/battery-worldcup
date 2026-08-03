@@ -409,6 +409,173 @@ def cmd_market(args: argparse.Namespace) -> int:
     return 1
 
 
+def cmd_certify(args: argparse.Namespace) -> int:
+    """Issue a signed certificate for a stored valuation."""
+    from .passport.resolver import PassportResolver
+    from .trust import certificate as certificate_module
+    from .trust.signing import SigningUnavailable
+
+    record = default_store().get(args.reference)
+    if record is None:
+        print(
+            f"error: no valuation found for {normalise_reference(args.reference)}",
+            file=sys.stderr,
+        )
+        return 1
+
+    document = record.payload.get("passport")
+    if document is None:
+        print(
+            "error: this record predates certificates and has no passport stored. "
+            "Re-scan the battery to issue one.",
+            file=sys.stderr,
+        )
+        return 1
+
+    try:
+        certificate = certificate_module.issue(
+            record, PassportResolver().from_document(document)
+        )
+    except SigningUnavailable as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 1
+
+    payload = certificate.to_dict()
+    if args.output:
+        Path(args.output).write_text(
+            json.dumps(payload, indent=2), encoding="utf-8"
+        )
+        print(f"wrote {args.output}")
+    if args.json:
+        print(json.dumps(payload, indent=2))
+    elif not args.output:
+        print(_render_certificate(certificate))
+    return 0
+
+
+def cmd_verify(args: argparse.Namespace) -> int:
+    """Check a certificate file."""
+    from .trust import certificate as certificate_module
+
+    try:
+        document = json.loads(Path(args.file).read_text(encoding="utf-8"))
+        certificate = certificate_module.from_dict(document)
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        print(f"error: not a certificate: {exc}", file=sys.stderr)
+        return 1
+
+    if certificate.verify():
+        issuer = certificate.signature.issuer if certificate.signature else "unknown"
+        print(f"{certificate.reference}: intact, issued by {issuer}")
+        print(f"  {certificate.strength_in_words()}")
+        return 0
+
+    print(
+        f"{certificate.reference}: DOES NOT VERIFY. The record has been altered "
+        "since it was issued, or it was never signed by the key it names.",
+        file=sys.stderr,
+    )
+    return 2
+
+
+def cmd_portfolio(args: argparse.Namespace) -> int:
+    """What everything on record is worth, and what waiting costs."""
+    from . import portfolio as portfolio_module
+
+    records = default_store().recent(limit=args.limit)
+    book = portfolio_module.build(records, currency=args.currency.upper())
+
+    if args.json:
+        print(json.dumps(portfolio_module.to_dict(book), indent=2))
+        return 0
+
+    if not book.holdings:
+        print("nothing on record")
+        return 0
+
+    out: list[str] = [_RULE, "  PORTFOLIO", _RULE]
+    out.append(f"  batteries        {len(book.holdings):,}")
+    out.append(f"  energy           {book.energy_kwh:,.0f} kWh")
+    out.append(
+        f"  value            {book.value.format(0)}  "
+        f"({book.value_per_kwh:,.0f} {book.currency}/kWh)"
+    )
+    out.append(
+        f"  losing           {book.monthly_loss.format(0)} a month  "
+        f"({book.loss_rate:.1%} a year)"
+    )
+    if book.urgent:
+        out.append(
+            f"  at the cliff     {len(book.urgent)} pack(s) holding "
+            f"{book.value_at_risk.format(0)} drop below resale grade within "
+            f"{portfolio_module.URGENT_HORIZON_YEARS:.0f} years"
+        )
+    if book.liabilities:
+        out.append(f"  liabilities      {len(book.liabilities)} cost money to dispose of")
+    out.append(f"  concentration    {book.concentration(0.8)} pack(s) hold 80% of the value")
+    out.append("")
+
+    groups = book.by("pack_model_key")[:10]
+    if groups:
+        out.append(f"  BY MODEL")
+        out.append(f"    {'model':<34s}{'n':>4s}{'value':>12s}{'/kWh':>9s}{'loss/yr':>11s}")
+        for group in groups:
+            out.append(
+                f"    {group.label[:32]:<34s}{group.count:>4d}"
+                f"{group.value:>12,.0f}{group.value_per_kwh:>9,.0f}"
+                f"{group.annual_loss:>11,.0f}"
+            )
+        out.append("")
+
+    if book.urgent:
+        out.append("  MOVE THESE FIRST")
+        for holding in book.urgent[:10]:
+            out.append(
+                f"    {holding.reference}  {holding.label[:28]:<30s}"
+                f"{holding.value:>9,.0f}  "
+                f"{holding.years_to_resale_floor:.1f} yr to the floor"
+            )
+        out.append("")
+
+    out.append(_RULE)
+    print("\n".join(out))
+    return 0
+
+
+def _render_certificate(certificate) -> str:
+    """A certificate as a person reads it: who said what."""
+    out: list[str] = [_RULE]
+    out.append(f"  CERTIFICATE {certificate.reference}")
+    out.append(_RULE)
+    out.append(f"  {certificate.subject.get('label', 'Battery')}")
+    out.append(f"  issued {certificate.issued_at:%Y-%m-%d} by "
+               f"{certificate.signature.issuer if certificate.signature else 'nobody'}")
+    out.append(f"  signature {'verifies' if certificate.verify() else 'DOES NOT VERIFY'}")
+    out.append("")
+    out.append(f"  {certificate.strength_in_words()}")
+    out.append("")
+    out.append("  WHO SAID WHAT")
+    for claim in certificate.claims:
+        value = "-" if claim.value in (None, "") else str(claim.value)
+        out.append(
+            f"    {claim.label[:38]:<40s}{value[:22]:<24s}{claim.basis.label}"
+        )
+    out.append("")
+
+    compliance = certificate.compliance
+    out.append(f"  EU 2023/1542: {compliance.get('summary', '')}")
+    for requirement in compliance.get("requirements", []):
+        if requirement["is_a_gap"]:
+            out.append(
+                f"    missing: {requirement['label']} "
+                f"({requirement['article']}, {requirement['owner']}'s to supply)"
+            )
+    out.append("")
+    out.append(f"  {certificate.attestation}")
+    out.append(_RULE)
+    return "\n".join(out)
+
+
 def _render_listing(listing) -> str:
     """One listing, with the price shown against its own valuation."""
     out: list[str] = []
@@ -861,6 +1028,35 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     market_parser.set_defaults(func=cmd_market)
+
+    certify_parser = subparsers.add_parser(
+        "certify",
+        help="issue a signed certificate for a stored valuation",
+        description=(
+            "A certificate records who stated each fact about the battery and "
+            "makes the record tamper-evident, so a buyer can check it without "
+            "trusting the seller."
+        ),
+    )
+    certify_parser.add_argument("reference", help="valuation reference")
+    certify_parser.add_argument("--output", metavar="PATH", help="write the JSON here")
+    certify_parser.add_argument("--json", action="store_true")
+    certify_parser.set_defaults(func=cmd_certify)
+
+    verify_parser = subparsers.add_parser(
+        "verify", help="check a certificate file"
+    )
+    verify_parser.add_argument("file", help="a certificate JSON file")
+    verify_parser.set_defaults(func=cmd_verify)
+
+    portfolio_parser = subparsers.add_parser(
+        "portfolio",
+        help="what everything on record is worth, and what waiting costs",
+    )
+    portfolio_parser.add_argument("--currency", default="EUR")
+    portfolio_parser.add_argument("--limit", type=int, default=500)
+    portfolio_parser.add_argument("--json", action="store_true")
+    portfolio_parser.set_defaults(func=cmd_portfolio)
 
     serve_parser = subparsers.add_parser("serve", help="run the API and scan UI")
     serve_parser.add_argument("--host", default="127.0.0.1")

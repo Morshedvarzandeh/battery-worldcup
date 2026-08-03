@@ -28,6 +28,7 @@ from ..valuation.config import ValuationConfig
 from ..valuation.engine import ValuationEngine
 from ..valuation.models import ResidualValuation
 from .marketplace import pages as market_pages, router as market_router
+from .trust import pages as trust_pages, router as trust_router
 from .schemas import HealthResponse, ProvidersResponse, ScanRequest, ValueRequest
 
 logger = logging.getLogger(__name__)
@@ -46,6 +47,8 @@ app = FastAPI(
 
 app.include_router(market_router)
 app.include_router(market_pages)
+app.include_router(trust_router)
+app.include_router(trust_pages)
 
 
 @lru_cache(maxsize=8)

@@ -25,6 +25,10 @@ api = [
     "opencv-python-headless>=4.8",
 ]
 scan = ["opencv-python-headless>=4.8", "pillow>=10.0"]
+# Signing certificates. Verification needs the same package, which is why it is
+# an extra rather than a dependency: a deployment that only values batteries
+# never touches it.
+trust = ["cryptography>=41.0", "cffi>=1.16"]
 # Reading pack and vehicle data straight from a battery-data Postgres
 # database. Not needed for the HTTP layer or the bundled snapshot.
 batterydata = ["psycopg[binary]>=3.1"]
@@ -36,6 +40,8 @@ all = [
     "opencv-python-headless>=4.8",
     "pillow>=10.0",
     "psycopg[binary]>=3.1",
+    "cryptography>=41.0",
+    "cffi>=1.16",
     "pytest>=7.4",
 ]
 

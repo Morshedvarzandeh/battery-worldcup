@@ -19,6 +19,7 @@ from ..models import (
     BatteryHealth,
     BatteryIdentity,
     BatteryPassport,
+    BatterySupplyChain,
     BatteryTechnical,
     PackCondition,
 )
@@ -63,6 +64,62 @@ ELEMENT_ALIASES: dict[str, str] = {
 
 # Ordered alias lists. Earlier entries win, so specific names beat vague ones.
 FIELD_ALIASES: dict[str, tuple[str, ...]] = {
+    "carbon_footprint_per_kwh": (
+        "carbonfootprintperkwh",
+        "carbonfootprintperfunctionalunit",
+        "batterycarbonfootprintperkwh",
+        "kgco2eperkwh",
+        "co2eperkwh",
+    ),
+    "carbon_footprint_total": (
+        "carbonfootprint",
+        "totalcarbonfootprint",
+        "batterycarbonfootprint",
+        "lifecyclecarbonfootprint",
+        "co2etotal",
+    ),
+    "carbon_footprint_study_url": (
+        "carbonfootprintstudy",
+        "carbonfootprintdeclaration",
+        "lcastudy",
+        "lcareport",
+    ),
+    "carbon_footprint_performance_class": (
+        "carbonfootprintperformanceclass",
+        "performanceclass",
+        "carbonfootprintclass",
+    ),
+    "due_diligence_policy_url": (
+        "duediligencepolicy",
+        "supplychainduediligencepolicy",
+        "duediligencepolicyurl",
+        "responsiblesourcingpolicy",
+    ),
+    "due_diligence_report_url": (
+        "duediligencereport",
+        "supplychainduediligencereport",
+        "duediligencereporturl",
+        "thirdpartyverification",
+    ),
+    "due_diligence_scheme": (
+        "duediligencescheme",
+        "recognisedscheme",
+        "recognizedscheme",
+        "certificationscheme",
+    ),
+    "third_party_audited": (
+        "thirdpartyaudited",
+        "independentlyaudited",
+        "auditedbythirdparty",
+        "externallyverified",
+    ),
+    "manufacturing_site": (
+        "manufacturingsite",
+        "manufacturingplant",
+        "productionsite",
+        "factory",
+        "plant",
+    ),
     "passport_id": ("passportid", "batterypassportid", "dppid", "productpassportid"),
     "battery_id": ("batteryid", "batteryidentifier", "packid", "uniqueidentifier", "id"),
     "serial_number": ("serialnumber", "serial", "serialno", "packserialnumber"),
@@ -700,8 +757,99 @@ def build_passport(flat: FlatDocument, document: dict[str, Any]) -> BatteryPassp
         technical=technical,
         health=health,
         composition=extract_composition(flat, document),
+        supply_chain=extract_supply_chain(flat),
         raw=document,
     )
+
+
+def extract_supply_chain(flat: FlatDocument) -> BatterySupplyChain:
+    """Read the carbon-footprint and due-diligence declarations.
+
+    All of it is relayed rather than checked. A footprint figure is a claim by
+    whoever wrote the passport, and treating it as anything more would be the
+    same mistake as treating a seller's word about state of health as a
+    measurement.
+    """
+    footprint_per_kwh = to_float(_scalar(flat.get("carbon_footprint_per_kwh")))
+    total = to_float(_scalar(flat.get("carbon_footprint_total")))
+
+    # A single "carbonFootprint" figure is ambiguous: some passports quote the
+    # whole battery, others quote it per kWh. Anything under 100 is per kWh --
+    # no traction pack has a lifetime footprint that small.
+    if footprint_per_kwh is None and total is not None and total < 100:
+        footprint_per_kwh, total = total, None
+
+    return BatterySupplyChain(
+        carbon_footprint_kg_co2e_per_kwh=footprint_per_kwh,
+        carbon_footprint_total_kg_co2e=total,
+        carbon_footprint_study_url=to_str(flat.get("carbon_footprint_study_url")),
+        carbon_footprint_performance_class=to_str(
+            flat.get("carbon_footprint_performance_class")
+        ),
+        due_diligence_policy_url=to_str(flat.get("due_diligence_policy_url")),
+        due_diligence_report_url=to_str(flat.get("due_diligence_report_url")),
+        due_diligence_scheme=to_str(flat.get("due_diligence_scheme")),
+        third_party_audited=_to_bool(flat.get("third_party_audited")),
+        material_origin=_material_origin(flat),
+        manufacturing_site=to_str(flat.get("manufacturing_site")),
+    )
+
+
+def _scalar(raw: Any) -> Any:
+    """Unwrap a ``{"value": x, "unit": y}`` measurement to its number."""
+    if isinstance(raw, dict):
+        for key in ("value", "amount", "quantity"):
+            if key in raw:
+                return raw[key]
+    return raw
+
+
+def _to_bool(raw: Any) -> bool | None:
+    """Read a declared boolean, leaving it unknown rather than guessing false."""
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, str):
+        lowered = raw.strip().lower()
+        if lowered in {"true", "yes", "y", "1"}:
+            return True
+        if lowered in {"false", "no", "n", "0"}:
+            return False
+    return None
+
+
+_ORIGIN_MARKERS = ("origin", "sourcecountry", "sourcedfrom", "provenance", "minedin")
+
+
+def _material_origin(flat: FlatDocument) -> dict[str, str]:
+    """Element -> declared country of extraction, wherever the document says so.
+
+    Passports place this differently -- ``cobalt.origin``, ``origin.cobalt``,
+    an array of ``{substance, country}`` records -- so the element is looked for
+    anywhere in the path rather than at a fixed depth.
+    """
+    origins: dict[str, str] = {}
+    for leaf_key, path, raw in flat.leaves:
+        if not any(marker in path for marker in _ORIGIN_MARKERS):
+            continue
+        value = raw if isinstance(raw, str) else None
+        if isinstance(raw, dict):
+            value = raw.get("country") or raw.get("value")
+        if not isinstance(value, str) or not value.strip():
+            continue
+
+        element = ELEMENT_ALIASES.get(leaf_key)
+        if element is None:
+            element = next(
+                (
+                    symbol
+                    for alias, symbol in ELEMENT_ALIASES.items()
+                    if len(alias) > 2 and alias in path
+                ),
+                None,
+            )
+        if element:
+            origins.setdefault(element, value.strip())
+    return origins
 
 
 class GenericAdapter(PassportAdapter):

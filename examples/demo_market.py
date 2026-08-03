@@ -57,6 +57,11 @@ PACKS = [
     ("Hyundai", "Kona Electric 64 kWh", "2020-01-01", 64, "NMC622", 92, 500),
     ("BYD", "Atto 3 Blade (60 kWh)", "2022-05-01", 60.5, "LFP", 94, 700),
     ("Volkswagen", "ID.3 Pro (58 kWh)", "2021-03-01", 58, "NMC712", 89, 560),
+    # Two near the cliff. Below the health a buyer will fit to a vehicle the
+    # resale route disappears outright, so these are where waiting is expensive
+    # and the portfolio view has something to say.
+    ("Renault", "Zoe ZE40 41 kWh", "2017-06-01", 41, "NMC622", 77, 1500),
+    ("BMW", "i3 60Ah (22 kWh)", "2014-04-01", 22.6, "NMC111", 76, 1400),
 ]
 
 # Buyers, and what they are each after. A second-life integrator and a repair

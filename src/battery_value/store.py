@@ -205,6 +205,17 @@ class ValuationStore:
         reference = payload.get("reference") or generate_reference()
         payload["reference"] = reference
 
+        if passport is not None and "passport" not in payload:
+            # The record has to stand on its own. A certificate reissued from it
+            # months later must say the same things about the battery, and it
+            # cannot if the passport it rested on is gone.
+            from .serialisation import passport_to_dict
+
+            try:
+                payload["passport"] = passport_to_dict(passport)
+            except Exception as exc:  # noqa: BLE001 - never lose the valuation
+                logger.debug("could not embed the passport in %s: %s", reference, exc)
+
         battery = payload.get("battery", {})
         identity = getattr(passport, "identity", None)
         created_at = datetime.now(timezone.utc)

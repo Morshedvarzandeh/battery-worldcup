@@ -226,6 +226,72 @@ class BatteryComposition(BaseModel):
         return not self.declared_masses_kg and not self.declared_mass_fractions
 
 
+class BatterySupplyChain(BaseModel):
+    """What the passport says about where the battery came from.
+
+    Regulation 2023/1542 makes three separate demands here, and they fall due on
+    three different dates, so they are three separate fields rather than one
+    "sustainability" blob:
+
+    - **Carbon footprint** (Art. 7): a declared figure in kg CO2e per kWh over
+      the battery's life, with the study behind it.
+    - **Recycled content** (Art. 8): minimum shares of cobalt, lead, lithium and
+      nickel from recovered material, from 2031.
+    - **Due diligence** (Art. 48-53): a policy covering cobalt, lithium, nickel
+      and natural graphite, aligned with the OECD guidance, third-party audited.
+
+    Every field is optional and every one is *relayed*, never asserted. Nothing
+    here is checked against reality; the passport said it, and the certificate
+    records who said it.
+    """
+
+    model_config = ConfigDict(extra="allow")
+
+    carbon_footprint_kg_co2e_per_kwh: float | None = Field(default=None, ge=0)
+    carbon_footprint_total_kg_co2e: float | None = Field(default=None, ge=0)
+    carbon_footprint_study_url: str | None = None
+    carbon_footprint_performance_class: str | None = None
+
+    due_diligence_policy_url: str | None = None
+    due_diligence_report_url: str | None = None
+    due_diligence_scheme: str | None = None
+    """The recognised scheme the operator follows, where one is named."""
+
+    third_party_audited: bool | None = None
+
+    material_origin: dict[str, str] = Field(default_factory=dict)
+    """Element symbol -> country or region of extraction, as declared."""
+
+    supplier_names: list[str] = Field(default_factory=list)
+    manufacturing_site: str | None = None
+
+    @property
+    def is_empty(self) -> bool:
+        """True when the passport says nothing about the supply chain at all."""
+        return not any(
+            (
+                self.carbon_footprint_kg_co2e_per_kwh,
+                self.carbon_footprint_total_kg_co2e,
+                self.carbon_footprint_study_url,
+                self.due_diligence_policy_url,
+                self.due_diligence_report_url,
+                self.due_diligence_scheme,
+                self.third_party_audited,
+                self.material_origin,
+                self.supplier_names,
+                self.manufacturing_site,
+            )
+        )
+
+    def footprint_per_kwh(self, rated_kwh: float | None) -> float | None:
+        """Carbon footprint per kWh, derived from the total when only that is given."""
+        if self.carbon_footprint_kg_co2e_per_kwh:
+            return self.carbon_footprint_kg_co2e_per_kwh
+        if self.carbon_footprint_total_kg_co2e and rated_kwh:
+            return self.carbon_footprint_total_kg_co2e / rated_kwh
+        return None
+
+
 class PassportSource(BaseModel):
     """Where this passport came from, for audit."""
 
@@ -250,6 +316,7 @@ class BatteryPassport(BaseModel):
     technical: BatteryTechnical = Field(default_factory=BatteryTechnical)
     health: BatteryHealth = Field(default_factory=BatteryHealth)
     composition: BatteryComposition = Field(default_factory=BatteryComposition)
+    supply_chain: BatterySupplyChain = Field(default_factory=BatterySupplyChain)
     source: PassportSource = Field(default_factory=PassportSource)
     raw: dict[str, Any] | None = Field(default=None, repr=False)
 
