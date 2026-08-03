@@ -432,6 +432,25 @@ def cmd_packs(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sync(args: argparse.Namespace) -> int:
+    """Refresh the bundled pack catalogue from battery-data."""
+    from .packs.battery_data import battery_data_providers, refresh_snapshot
+
+    providers = battery_data_providers()
+    if not providers:
+        print(
+            "error: no battery-data source configured. Set BV_BATTERY_DATA_DSN "
+            "for a Postgres database, or BV_BATTERY_DATA_URL for the HTTP API.",
+            file=sys.stderr,
+        )
+        return 1
+
+    print(f"reading from {providers[0].describe()}", file=sys.stderr)
+    count, destination = refresh_snapshot(providers[0], path=args.output)
+    print(f"wrote {count} pack model(s) to {destination}", file=sys.stderr)
+    return 0
+
+
 def cmd_serve(args: argparse.Namespace) -> int:
     """Run the HTTP API and scan UI."""
     try:
@@ -567,6 +586,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--days", type=int, default=None, help="override the retention period"
     )
     prune_parser.set_defaults(func=cmd_prune)
+
+    sync_parser = subparsers.add_parser(
+        "sync", help="refresh the bundled pack catalogue from battery-data"
+    )
+    sync_parser.add_argument(
+        "--output",
+        metavar="PATH",
+        help="write somewhere other than the bundled catalogue",
+    )
+    sync_parser.set_defaults(func=cmd_sync)
 
     serve_parser = subparsers.add_parser("serve", help="run the API and scan UI")
     serve_parser.add_argument("--host", default="127.0.0.1")

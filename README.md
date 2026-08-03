@@ -111,6 +111,7 @@ bv show BV-7K2P-M4X9                    # reprint a stored valuation
 bv show BV-7K2P-M4X9 --report ./        # rebuild its report
 bv forget BV-7K2P-M4X9                  # erase it
 bv prune --days 365                     # enforce retention
+bv sync                                 # refresh the pack catalogue from battery-data
 ```
 
 ### HTTP API
@@ -194,8 +195,25 @@ available. It supplies the component breakdown the parts-out route needs, a
 model-specific replacement price for resale, and fills whatever the passport
 left out.
 
-Twenty common European EV and hybrid packs ship in the catalogue. Add your own
-without forking:
+The source of truth for that is
+**[battery-data](https://github.com/Morshedvarzandeh/battery-data)** — a
+provenance-first Postgres database that already models which pack is fielded in
+which vehicle, and on what evidence. battery-value reads it rather than keeping
+a rival copy:
+
+```bash
+export BV_BATTERY_DATA_DSN='postgresql://user@host/batterydb'  # Postgres
+export BV_BATTERY_DATA_URL='http://localhost:8080'             # or HTTP
+bv sync            # refresh the bundled snapshot from it
+```
+
+Claims that battery-data marks as `community_reported` or `inferred` are
+**not** used. Valuing a pack against a guessed identity would launder the guess
+into a number with a currency symbol, and the output would look equally
+confident either way.
+
+Twenty packs ship in the bundled snapshot, so a fresh clone works with none of
+the above configured. You can also add your own layers:
 
 ```bash
 export BV_PACK_CATALOGUE_DIR=/etc/battery-value/packs   # directory of JSON
@@ -213,6 +231,8 @@ custom-layer API.
   calculated, what drives confidence, and the known limitations.
 - **[Market data](docs/market-data.md)** — every price source, the
   contained-metal maths, recovery rates and refiner payables.
+- **[battery-data](docs/battery-data.md)** — the split between the two repositories,
+  the three read layers, and why weakly attributed claims are dropped.
 - **[Pack catalogue](docs/pack-catalogue.md)** — matching, components, extending.
 - **[Passport formats](docs/passport-formats.md)** — carriers, schema adapters,
   and the awkward real-world shapes that are handled.
@@ -272,7 +292,7 @@ photo of a code  →  decode  →  classify  →  fetch  →  normalise to Batte
 
 ```bash
 pip install -e '.[all]'
-python -m pytest              # 322 tests, no network required
+python -m pytest              # 335 tests, no network or database required
 ```
 
 Tests run fully offline against an isolated cache. The QR tests degrade a clean

@@ -1,5 +1,10 @@
 """Pack model catalogue: identify the pack, then know what is inside it."""
 
+from .battery_data import (
+    BatteryDataHttpProvider,
+    BatteryDataPostgresProvider,
+    battery_data_providers,
+)
 from .catalogue import (
     MATCH_THRESHOLD,
     PackCatalogue,
@@ -20,6 +25,9 @@ from .providers import (
 
 __all__ = [
     "MATCH_THRESHOLD",
+    "BatteryDataHttpProvider",
+    "BatteryDataPostgresProvider",
+    "battery_data_providers",
     "BundledCatalogueProvider",
     "EnrichmentResult",
     "FilledField",

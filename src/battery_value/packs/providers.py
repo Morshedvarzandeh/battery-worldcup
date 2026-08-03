@@ -256,7 +256,12 @@ def build_pack_resolver(
     """Assemble the standard pack-data chain.
 
     Ordering, most specific first: caller-supplied layers, then a local model
-    directory, then a remote service, then the bundled catalogue.
+    directory, then a remote service, then battery-data if it is configured,
+    then the bundled catalogue.
+
+    The bundled catalogue sits last and is a generated cache of battery-data
+    rather than a rival source of truth -- it is what keeps a fresh clone
+    working with nothing configured.
     """
     providers: list[PackDataProvider] = list(extra_providers or [])
 
@@ -267,6 +272,11 @@ def build_pack_resolver(
     remote = HttpPackProvider(api_url)
     if remote.is_available():
         providers.append(remote)
+
+    # Imported here: battery-data support is optional and pulls in psycopg.
+    from .battery_data import battery_data_providers
+
+    providers.extend(battery_data_providers())
 
     providers.append(BundledCatalogueProvider())
     return PackResolver(providers=providers)
