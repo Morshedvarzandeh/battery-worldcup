@@ -97,14 +97,46 @@ without them is not comparable. The catalogue's figures are OEM ratings whose
 conditions are unstated, so the export records exactly that via
 `condition_set.unstated` rather than inventing a plausible 25 °C.
 
+## Recovery terms are read live too
+
+Packs are not the only thing sourced from battery-data. When a DSN is
+configured, the engine also reads the recovery rates, refiner payables,
+treatment costs, dangerous-goods tariffs and model calibration from it, taking
+only rows valid **today** and never a regulatory minimum — a floor on physical
+recovery makes no claim about payment.
+
+```python
+from battery_value.materials.battery_data import recovery_library
+
+terms = recovery_library()      # live when configured, bundled otherwise
+terms.get("hydrometallurgical").recovery_for("Ni").value_yield   # 0.646
+```
+
+This matters because payables are negotiated and move. A term agreed in one
+year silently pricing a pack in another is the failure mode battery-data's
+validity windows exist to prevent, and reading live is what makes them count.
+
+Falling back to the bundled dataset is logged rather than silent. The
+difference between live and bundled payables is real money.
+
 ## Round trip
 
-The path is closed, and tested:
+The path is closed, and the equality is a test rather than a claim:
 
 ```
 battery-value JSON  →  export  →  battery-data Postgres  →  bv sync  →  battery-value JSON
 ```
 
-`tests/test_battery_data.py` covers the mapping and the attribution rules
-everywhere, and runs the full round trip when `BV_BATTERY_DATA_DSN` points at a
-live database.
+**All twenty pack models value identically from either source, across all four
+pathways.** Getting there caught four things the export was quietly dropping —
+the human label, every component except modules, the demand tier, and aliases —
+each of which moved a number. Two more surfaced on the read side: battery-data
+stores the legal entity (`Nissan Motor`) where a passport names the brand
+(`Nissan`), and a pack now assembles four kinds of child, so the module join
+needed constraining or `module_count` came from whichever child the planner
+picked first.
+
+None of those would have been visible without comparing the two sources
+directly, which is why `tests/test_battery_data.py` does it for every model
+rather than for one. It also checks the recovery terms match. Both run when
+`BV_BATTERY_DATA_DSN` points at a live database and skip cleanly otherwise.

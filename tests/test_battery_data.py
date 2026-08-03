@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import date
 
 import httpx
 import pytest
@@ -20,6 +21,8 @@ from battery_value.packs.battery_data import (
     _row_to_document,
     battery_data_providers,
 )
+
+VALUATION_DATE = date(2026, 8, 1)
 
 COMPLETE_ROW = {
     "product_uid": "pack/nissan/nissan-leaf-ze1-40",
@@ -145,6 +148,105 @@ class TestAgainstLiveDatabase:
         )
         match = BatteryDataPostgresProvider().find(passport)
         assert match is not None and match.is_confident
+
+    def test_every_pack_values_identically_from_both_sources(self, isolated_cache):
+        """The round trip must be lossless, not approximately lossless.
+
+        A silent divergence between the bundled snapshot and the database
+        would mean two answers to the same question, which is exactly what
+        reading from battery-data was supposed to stop.
+        """
+        from battery_value.market.resolver import build_resolver
+        from battery_value.packs import load_catalogue
+        from battery_value.packs.battery_data import BatteryDataPostgresProvider
+        from battery_value.packs.providers import (
+            BundledCatalogueProvider,
+            PackResolver,
+        )
+        from battery_value.passport.resolver import PassportResolver
+        from battery_value.valuation.config import ValuationConfig
+        from battery_value.valuation.engine import ValuationEngine
+
+        resolver = PassportResolver()
+
+        def engine_for(provider):
+            return ValuationEngine(
+                config=ValuationConfig(currency="EUR"),
+                prices=build_resolver(
+                    currency="EUR", offline=True, cache=isolated_cache
+                ),
+                packs=PackResolver(providers=[provider]),
+            )
+
+        bundled = engine_for(BundledCatalogueProvider())
+        live = engine_for(BatteryDataPostgresProvider())
+
+        checked = 0
+        for model in load_catalogue().models:
+            # A bare vehicle name scores 0.55 against either source, which is
+            # below the bar for enrichment -- correctly, since "Model 3 Long
+            # Range" alone does not identify a pack. Real passports carry the
+            # manufacturer too, so the comparison uses one.
+            document = {
+                "generalInformation": {
+                    "manufacturerName": model.manufacturer,
+                    "vehicleModel": model.vehicle_models[0],
+                },
+                "status": {"stateOfHealth": 82},
+            }
+            passport_a = resolver.from_document(dict(document))
+            passport_b = resolver.from_document(dict(document))
+
+            from_bundle = bundled.value(passport_a, as_of=VALUATION_DATE)
+            from_db = live.value(passport_b, as_of=VALUATION_DATE)
+
+            assert from_db.battery_label == from_bundle.battery_label, model.key
+            for pathway in from_bundle.pathways:
+                other = from_db.pathway(pathway.pathway)
+                assert other is not None, (model.key, pathway.pathway)
+                assert other.net_value.amount == pytest.approx(
+                    pathway.net_value.amount, rel=1e-9
+                ), (model.key, pathway.pathway.value)
+            checked += 1
+
+        assert checked >= 15
+
+    def test_recovery_terms_match_the_bundled_dataset(self):
+        """The economics survive the round trip too, not just the packs."""
+        from battery_value.materials.battery_data import (
+            load_recovery_from_battery_data,
+        )
+        from battery_value.materials.recovery import load_recovery
+
+        live = load_recovery_from_battery_data()
+        bundled = load_recovery()
+
+        assert set(live.processes) == set(bundled.processes)
+        for key, process in bundled.processes.items():
+            other = live.processes[key]
+            for element, terms in process.elements.items():
+                if terms.value_yield <= 0:
+                    continue  # not exported: nothing to pay for
+                mirrored = other.recovery_for(element)
+                assert mirrored.recovery_rate == pytest.approx(terms.recovery_rate)
+                assert mirrored.payable_fraction == pytest.approx(
+                    terms.payable_fraction
+                )
+            assert other.costs.total_eur_per_kg == pytest.approx(
+                process.costs.total_eur_per_kg
+            )
+
+        assert live.logistics.base_eur_per_kg == pytest.approx(
+            bundled.logistics.base_eur_per_kg
+        )
+        assert live.logistics.condition_multiplier == pytest.approx(
+            bundled.logistics.condition_multiplier
+        )
+        assert live.reuse.minimum_viable_soh == bundled.reuse.minimum_viable_soh
+        assert (
+            live.second_life.minimum_viable_soh
+            == bundled.second_life.minimum_viable_soh
+        )
 
     def test_snapshot_round_trips(self, tmp_path):
         """battery-value JSON -> battery-data -> battery-value JSON."""

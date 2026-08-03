@@ -129,6 +129,25 @@ def _build_model(entry: dict[str, Any], catalogue: dict[str, Any]) -> PackModel:
             templates=templates,
             mass_split=mass_split,
         )
+        # A source that knows what this model's own BMS or HV box fetches
+        # beats the archetype template, so let it say so without having to
+        # supply a whole component list.
+        overrides = entry.get("component_values") or {}
+        if overrides:
+            components = tuple(
+                replace(
+                    component,
+                    count=int(overrides[component.key].get("count", component.count)),
+                    unit_value_eur=float(
+                        overrides[component.key].get(
+                            "unit_value_eur", component.unit_value_eur
+                        )
+                    ),
+                )
+                if component.key in overrides
+                else component
+                for component in components
+            )
 
     years = entry.get("years")
     return PackModel(

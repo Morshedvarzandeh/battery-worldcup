@@ -88,14 +88,20 @@ SOURCES = [
     ),
 ]
 
-# Which components of a pack are modelled as products in their own right.
-# An enclosure is not a product anyone sells; a module and a BMS are.
+# Which components of a pack are products in their own right. An enclosure
+# is not something anyone sells; a module, a BMS and an HV box are.
 COMPONENT_KINDS = {
     "modules": ("module", "Battery module"),
     "bms": ("component", "Battery management system"),
     "hv_box": ("component", "HV junction box"),
     "thermal": ("component", "Cooling plate assembly"),
 }
+
+# component_market_value.sell_through means "share of units that actually find
+# a buyer", which is what the catalogue's demand tier was approximating. Using
+# the existing column collapses two overlapping knobs into the one that is
+# already modelled.
+DEMAND_SELL_THROUGH = {"high": 0.95, "medium": 0.85, "low": 0.70}
 
 # battery-data's form_factor enum, which is narrower than free text.
 FORM_FACTORS = {
@@ -446,12 +452,23 @@ def emit_packs() -> None:
         emit(
             "INSERT INTO product (uid, kind, manufacturer_id, model_number, brand,\n"
             "                     form_factor, lifecycle, is_rechargeable, notes)\n"
-            f"VALUES ({q(pack_uid)},'pack',{org_ref(org_uid)},{q(model.key)},"
+            f"VALUES ({q(pack_uid)},'pack',{org_ref(org_uid)},{q(model.label)},"
             f"{q(model.manufacturer)},\n"
             f"        {q(FORM_FACTORS.get((model.cell_format or '').lower()))},"
             "'unknown', true,\n"
             f"        {q(model.notes or None)})\n"
             "ON CONFLICT (uid) DO NOTHING;"
+        )
+        # Aliases carry the short names people and part systems actually use
+        # ('ze1', 'i394'). Without them a pack matches on its vehicle name
+        # alone, which scores too low to be trusted for enrichment.
+        aliases = sorted({model.key, *model.aliases})
+        emit(
+            "INSERT INTO product_alias (product_id, alias, kind)\n"
+            "SELECT p.id, v.alias, 'oem_code' FROM product p,\n"
+            "  (VALUES " + ",".join(f"({q(a)})" for a in aliases) + ") AS v(alias)\n"
+            f" WHERE p.uid={q(pack_uid)}\n"
+            "ON CONFLICT (product_id, alias, kind) DO NOTHING;"
         )
         emit(
             "INSERT INTO product_revision (uid, product_id, source_id,\n"
@@ -499,8 +516,52 @@ def emit_packs() -> None:
             "  FROM quantity q WHERE q.code='mass';"
         )
 
-        # Modules are a product; the enclosure is not. Only emit the ones
-        # somebody could actually buy.
+        sell_through = DEMAND_SELL_THROUGH.get(model.second_life_demand, 0.85)
+
+        # Every component with a used market becomes a product, so the value
+        # of a BMS or an HV box survives the round trip rather than being
+        # rebuilt from a template on the far side.
+        for component_key, (kind, label) in COMPONENT_KINDS.items():
+            if component_key == "modules":
+                continue
+            component = model.component(component_key)
+            if component is None or component.unit_value_eur <= 0:
+                continue
+            part_uid = f"component/{slug(model.manufacturer)}/{model.key}-{component_key}"
+            part_rev = f"{part_uid}@bv"
+            emit(
+                "INSERT INTO product (uid, kind, manufacturer_id, model_number,\n"
+                "                     brand, lifecycle, is_rechargeable)\n"
+                f"VALUES ({q(part_uid)},{q(kind)},{org_ref(org_uid)},"
+                f"{q(label + ' for ' + model.label)},\n"
+                f"        {q(model.manufacturer)},'unknown', false)\n"
+                "ON CONFLICT (uid) DO NOTHING;"
+            )
+            emit(
+                "INSERT INTO product_revision (uid, product_id, source_id,\n"
+                "                              revision_label)\n"
+                f"SELECT {q(part_rev)}, p.id, s.id, 'bv-catalogue'\n"
+                f"  FROM product p, source s\n"
+                f" WHERE p.uid={q(part_uid)} AND s.uid='src/bv-pack-catalogue'\n"
+                "ON CONFLICT (uid) DO NOTHING;"
+            )
+            emit(
+                "INSERT INTO product_assembly (parent_revision_id,\n"
+                "       child_revision_id, quantity, provenance_id)\n"
+                f"SELECT {rev_ref(rev_uid)},{rev_ref(part_rev)},{component.count},\n"
+                f"       {prov_ref('src/bv-pack-catalogue')}\n"
+                "ON CONFLICT (parent_revision_id, child_revision_id) DO NOTHING;"
+            )
+            emit(
+                "INSERT INTO component_market_value (product_revision_id,\n"
+                "       unit_value, currency, sell_through, valid_from, region,\n"
+                "       provenance_id)\n"
+                f"SELECT {rev_ref(part_rev)},{component.unit_value_eur},'EUR',"
+                f"{sell_through},\n"
+                f"       {q(VALID_FROM)},'EU',"
+                f"{prov_ref('src/bv-used-parts-market')};"
+            )
+
         module = model.component("modules")
         if module is not None and model.module_count:
             module_uid = f"module/{slug(model.manufacturer)}/{model.key}"
@@ -535,7 +596,7 @@ def emit_packs() -> None:
                     "       unit_value, currency, assumed_soh, sell_through,\n"
                     "       valid_from, region, provenance_id)\n"
                     f"SELECT {rev_ref(module_rev)},{module.unit_value_eur},'EUR',"
-                    "1.0,0.85,\n"
+                    f"1.0,{sell_through},\n"
                     f"       {q(VALID_FROM)},'EU',"
                     f"{prov_ref('src/bv-used-parts-market')};"
                 )

@@ -9,7 +9,8 @@ from datetime import date, datetime, timezone
 from ..errors import ValuationError
 from ..materials.bom import build_bom
 from ..materials.chemistry import ChemistrySpec, try_resolve_chemistry
-from ..materials.recovery import load_recovery
+from ..materials.battery_data import recovery_library
+from ..materials.recovery import RecoveryLibrary, load_recovery
 from ..market.resolver import PriceResolver, build_resolver
 from ..money import Money
 from ..packs.enrichment import EnrichmentResult, enrich_passport
@@ -48,6 +49,8 @@ class ValuationEngine:
     prices: PriceResolver | None = None
     packs: PackResolver | None = None
     passports: PassportResolver | None = None
+    recovery: RecoveryLibrary | None = None
+    """Recovery terms. Read from battery-data when configured, else bundled."""
 
     def __post_init__(self) -> None:
         if self.prices is None:
@@ -56,6 +59,10 @@ class ValuationEngine:
             self.packs = build_pack_resolver()
         if self.passports is None:
             self.passports = PassportResolver()
+        if self.recovery is None:
+            # Resolved once per engine rather than per valuation: payables move
+            # with the market, not between two scans a second apart.
+            self.recovery = recovery_library()
 
     def value_scan(self, payload: str, *, as_of: date | None = None) -> ResidualValuation:
         """Value a pack straight from a scanned QR payload."""
@@ -118,7 +125,7 @@ class ValuationEngine:
             chemistry=chemistry,
             bom=bom,
             prices=price_set,
-            recovery=load_recovery(),
+            recovery=self.recovery,
             config=self.config,
             fx=self.prices.fx,
             pack_model=pack_model,
@@ -188,7 +195,7 @@ class ValuationEngine:
         )
 
     def _resolve_prices(self, bom, pack_model):
-        recovery = load_recovery()
+        recovery = self.recovery or load_recovery()
         forms: set[str] = set(_ALWAYS_PRICE)
         for process in recovery.processes.values():
             if not process.supports(bom.chemistry):

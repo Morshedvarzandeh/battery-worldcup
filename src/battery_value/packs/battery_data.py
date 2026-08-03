@@ -51,11 +51,31 @@ WEAK_BASES = frozenset({"community_reported", "inferred"})
 
 # One query, because the interesting part is the join: pack, its assembly,
 # its chemistry, the vehicles it is fielded in, and what its parts fetch.
+# Components with a used market, keyed by the pack they belong to. Kept as a
+# second query because a pack has a variable number of them and folding that
+# into the pack row would multiply it out.
+_COMPONENT_QUERY = """
+SELECT parent.uid AS pack_uid,
+       child.uid  AS component_uid,
+       child.kind::text AS kind,
+       asm.quantity,
+       cmv.unit_value
+  FROM bd.product_assembly asm
+  JOIN bd.product_revision pr   ON pr.id = asm.parent_revision_id
+  JOIN bd.product parent        ON parent.id = pr.product_id
+  JOIN bd.product_revision cr   ON cr.id = asm.child_revision_id
+  JOIN bd.product child         ON child.id = cr.product_id
+  JOIN bd.component_market_value cmv
+       ON cmv.product_revision_id = cr.id AND cmv.valid_to IS NULL
+ WHERE parent.kind = 'pack' AND child.kind <> 'module'
+"""
+
 _PACK_QUERY = """
 SELECT
   p.uid                              AS product_uid,
   p.model_number,
-  o.name                             AS manufacturer,
+  o.name                             AS organisation,
+  p.brand                            AS brand,
   pc.designation                     AS chemistry,
   p.form_factor_code,
   r.id                               AS revision_id,
@@ -63,16 +83,24 @@ SELECT
   energy.value_si / 3.6e6            AS rated_kwh,
   mass.value_si                      AS pack_mass_kg,
   cmv.unit_value                     AS used_module_value_eur,
+  cmv.sell_through                   AS sell_through,
   rp.price_per_kwh                   AS oem_replacement_price_eur_per_kwh,
   array_remove(array_agg(DISTINCT a.name), NULL)      AS vehicle_models,
+  array_remove(array_agg(DISTINCT al.alias), NULL)    AS aliases,
   max(pa.confidence)                 AS attribution_confidence,
   min(pa.basis::text)                AS attribution_basis
 FROM bd.product p
 JOIN bd.organization o          ON o.id = p.manufacturer_id
 JOIN bd.product_revision r      ON r.product_id = p.id
-LEFT JOIN bd.product_chemistry pc ON pc.product_revision_id = r.id
+-- Modules only: a pack also assembles a BMS and an HV box, and letting
+-- those through would make module_count whichever child came first.
 LEFT JOIN bd.product_assembly asm ON asm.parent_revision_id = r.id
+     AND EXISTS (SELECT 1 FROM bd.product_revision x
+                   JOIN bd.product xp ON xp.id = x.product_id
+                  WHERE x.id = asm.child_revision_id AND xp.kind = 'module')
+LEFT JOIN bd.product_chemistry pc ON pc.product_revision_id = r.id
 LEFT JOIN bd.product_revision mr  ON mr.id = asm.child_revision_id
+LEFT JOIN bd.product mp           ON mp.id = mr.product_id
 LEFT JOIN bd.component_market_value cmv
        ON cmv.product_revision_id = mr.id AND cmv.valid_to IS NULL
 LEFT JOIN bd.replacement_price rp
@@ -80,6 +108,7 @@ LEFT JOIN bd.replacement_price rp
 LEFT JOIN bd.product_application pa
        ON pa.product_revision_id = r.id AND pa.superseded_by IS NULL
 LEFT JOIN bd.application a      ON a.id = pa.application_id
+LEFT JOIN bd.product_alias al   ON al.product_id = p.id
 -- Energy and mass are observations, not columns. Taking the nominal one
 -- keeps this to the nameplate figure rather than a test result.
 LEFT JOIN bd.observation energy
@@ -91,9 +120,10 @@ LEFT JOIN bd.observation mass
       AND mass.statistic = 'nominal'
       AND mass.quantity_id = (SELECT id FROM bd.quantity WHERE code='mass')
 WHERE p.kind = 'pack'
-GROUP BY p.uid, p.model_number, o.name, pc.designation, p.form_factor_code,
-         r.id, asm.quantity, cmv.unit_value, rp.price_per_kwh,
-         energy.value_si, mass.value_si
+GROUP BY p.uid, p.model_number, o.name, p.brand, pc.designation,
+         p.form_factor_code,
+         r.id, asm.quantity, cmv.unit_value, cmv.sell_through,
+         rp.price_per_kwh, energy.value_si, mass.value_si
 """
 
 
@@ -126,14 +156,28 @@ def _row_to_document(row: dict[str, Any]) -> dict[str, Any] | None:
     document = {
         "key": key,
         "label": row.get("model_number") or key,
-        "manufacturer": row["manufacturer"],
+        # battery-data stores the legal entity ("Nissan Motor"); a passport
+        # names the brand ("Nissan"). Matching wants the brand.
+        "manufacturer": row.get("brand") or row.get("manufacturer")
+        or row.get("organisation"),
         "chemistry": chemistry,
         "vehicle_models": list(row.get("vehicle_models") or ()),
+        "aliases": list(row.get("aliases") or ()),
         "module_count": row.get("module_count"),
         "cell_format": row.get("form_factor_code"),
         "used_module_value_eur": float(row.get("used_module_value_eur") or 0.0),
         "source": "battery-data",
     }
+
+    # sell_through is battery-data's name for how readily this model's
+    # hardware finds a buyer, which is what the catalogue calls demand.
+    sell_through = row.get("sell_through")
+    if sell_through is not None:
+        document["second_life_demand"] = (
+            "high" if float(sell_through) >= 0.92
+            else "medium" if float(sell_through) >= 0.78
+            else "low"
+        )
 
     if row.get("oem_replacement_price_eur_per_kwh") is not None:
         document["oem_replacement_price_eur_per_kwh"] = float(
@@ -158,6 +202,44 @@ def _row_to_document(row: dict[str, Any]) -> dict[str, Any] | None:
         return None
 
     return document
+
+
+# battery-data product uids for the components a pack model names.
+_COMPONENT_SUFFIXES = ("bms", "hv_box", "thermal")
+
+
+def _attach_components(
+    documents: list[dict[str, Any] | None], components: list[dict[str, Any]]
+) -> None:
+    """Fold component market values into their pack documents, in place.
+
+    Without this a pack rebuilt from the database would fall back to the
+    archetype component template and lose the model-specific value of its BMS
+    and HV box -- roughly a quarter of what parting one out is worth.
+    """
+    by_pack: dict[str, list[dict[str, Any]]] = {}
+    for row in components:
+        key = str(row["pack_uid"]).rsplit("/", 1)[-1]
+        by_pack.setdefault(key, []).append(row)
+
+    for document in documents:
+        if document is None:
+            continue
+        rows = by_pack.get(document["key"])
+        if not rows:
+            continue
+        overrides = {}
+        for row in rows:
+            uid = str(row["component_uid"])
+            for suffix in _COMPONENT_SUFFIXES:
+                if uid.endswith(f"-{suffix}"):
+                    overrides[suffix] = {
+                        "count": int(row["quantity"]),
+                        "unit_value_eur": float(row["unit_value"]),
+                    }
+                    break
+        if overrides:
+            document["component_values"] = overrides
 
 
 class BatteryDataPostgresProvider(PackDataProvider):
@@ -198,8 +280,11 @@ class BatteryDataPostgresProvider(PackDataProvider):
             with connection.cursor() as cursor:
                 cursor.execute(_PACK_QUERY)
                 rows = cursor.fetchall()
+                cursor.execute(_COMPONENT_QUERY)
+                components = [dict(row) for row in cursor.fetchall()]
 
         documents = [_row_to_document(dict(row)) for row in rows]
+        _attach_components(documents, components)
         usable = [document for document in documents if document is not None]
         skipped = len(documents) - len(usable)
         if skipped:
