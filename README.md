@@ -149,6 +149,7 @@ curl -X POST localhost:8000/v1/value \
 | `GET /v1/packs` | Pack model catalogue |
 | `GET /v1/providers` | Which data layers are wired up |
 | `GET /v1/health` | Liveness, dataset versions, photo-decoding availability |
+| `GET /v1/source` | Where to get the source of this deployment (AGPL §13) |
 
 OpenAPI docs at `/docs`.
 
@@ -375,7 +376,7 @@ photo of a code  →  decode  →  classify  →  fetch  →  normalise to Batte
 
 ```bash
 pip install -e '.[all]'
-python -m pytest              # 335 tests, no network or database required
+python -m pytest              # 455 tests, no network or database required
 ```
 
 Tests run fully offline against an isolated cache. The QR tests degrade a clean
@@ -384,4 +385,26 @@ light, heavy JPEG, sensor noise — and check it still reads.
 
 ## Licence
 
-MIT — see [LICENSE](LICENSE).
+**AGPL-3.0-or-later** — see [LICENSE](LICENSE).
+
+The engine is open and stays open. The AGPL adds one thing over a permissive
+licence: running a modified version as a network service counts as
+distributing it, so anyone who improves the valuation model and puts it behind
+an API owes those changes back to the people using it. That is the point here.
+A market clears on numbers buyers believe, and a number produced by a method
+nobody can inspect is worth less than one they can check line by line.
+
+Nothing in the licence restricts *use*. Value packs, sell packs, run it inside
+a business, charge for the service — none of that triggers an obligation.
+Publishing a modified engine does.
+
+Two things it does not cover:
+
+- **Data is licensed separately.** The curated datasets in
+  [battery-data](https://github.com/Morshedvarzandeh/battery-data) are
+  CC-BY-4.0, and manufacturer datasheets are never redistributed.
+- **The relicence is not retroactive.** Earlier commits went out under MIT and
+  those rights do not expire; anyone holding that code keeps them.
+
+If the copyleft is genuinely incompatible with how you need to embed this,
+the copyright holder can also license it on other terms — open an issue.

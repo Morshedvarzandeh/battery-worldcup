@@ -9,6 +9,7 @@ import pytest
 fastapi = pytest.importorskip("fastapi")
 from fastapi.testclient import TestClient  # noqa: E402
 
+from battery_value import licence  # noqa: E402
 from battery_value.api.app import app  # noqa: E402
 from battery_value.cli import main  # noqa: E402
 
@@ -30,6 +31,30 @@ class TestApi:
         assert response.status_code == 200
         assert "text/html" in response.headers["content-type"]
         assert "What is your battery worth?" in response.text
+
+    def test_the_source_offer_defaults_to_upstream(self, client, monkeypatch):
+        monkeypatch.delenv(licence.ENV_SOURCE_URL, raising=False)
+        body = client.get("/v1/source").json()
+        assert body["licence"] == "AGPL-3.0-or-later"
+        assert body["source_url"] == licence.UPSTREAM_SOURCE_URL
+        assert licence.ENV_SOURCE_URL in body["note"]
+
+    def test_a_modified_deployment_offers_its_own_tree(self, client, monkeypatch):
+        """A fork that sets the variable must send users to its own source.
+
+        This is the AGPL obligation the endpoint exists for: pointing at
+        upstream while running modified code is the failure it prevents.
+        """
+        monkeypatch.setenv(licence.ENV_SOURCE_URL, "https://git.example.com/fork")
+        body = client.get("/v1/source").json()
+        assert body["source_url"] == "https://git.example.com/fork"
+        assert body["upstream_url"] == licence.UPSTREAM_SOURCE_URL
+        assert body["source_url"] != body["upstream_url"]
+
+    def test_every_page_offers_the_source(self, client):
+        """A source offer only counts if the user can see it."""
+        for path in ("/", "/market", "/verify"):
+            assert '<a id="source-link"' in client.get(path).text, path
 
     def test_scan_returns_a_passport(self, client, eu_dpp_document):
         body = client.post("/v1/scan", json={"document": eu_dpp_document}).json()

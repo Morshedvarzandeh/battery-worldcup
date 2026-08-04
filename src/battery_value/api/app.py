@@ -10,7 +10,7 @@ from typing import Any
 from fastapi import FastAPI, File, HTTPException, Query, UploadFile
 from fastapi.responses import HTMLResponse, Response
 
-from .. import __version__
+from .. import __version__, licence
 from ..compounds import TRADED_FORMS
 from ..errors import BatteryValueError, PassportError, ValuationError
 from ..market.providers.baseline import baseline_snapshot_date
@@ -111,6 +111,17 @@ def health() -> HealthResponse:
         baseline_snapshot_date=baseline_snapshot_date().isoformat(),
         photo_decoding=decoder_available(),
     )
+
+
+@app.get("/v1/source")
+def source() -> dict[str, str]:
+    """Where to get the source of this deployment.
+
+    The AGPL requires a network service to offer its users the source of the
+    version they are actually talking to. Serving it as an endpoint rather than
+    a line in a README means the offer travels with the deployment.
+    """
+    return licence.offer()
 
 
 @app.post("/v1/scan")

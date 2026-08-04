@@ -9,6 +9,11 @@ description = "Scan a battery passport and find out what the pack is worth."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { file = "LICENSE" }
+classifiers = [
+    "License :: OSI Approved :: GNU Affero General Public License v3 or later (AGPLv3+)",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering",
+]
 dependencies = [
     "pydantic>=2.5",
     "httpx>=0.24",

@@ -141,7 +141,7 @@ def to_battery_data_sql(
         f"VALUES ({_quote(SOURCE_UID)},'distributor_listing',",
         "        'battery-value marketplace completed sales',",
         "        'https://github.com/Morshedvarzandeh/battery-worldcup',",
-        "        'MIT', true, now(),",
+        "        'AGPL-3.0-or-later', true, now(),",
         "        'Private-treaty sales of identified packs whose state of health "
         "was independently assessed from a battery passport at listing time. "
         "Thin market; sample sizes are small and stated.')",

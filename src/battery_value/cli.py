@@ -8,6 +8,7 @@ import logging
 import sys
 from pathlib import Path
 
+from . import __version__, licence
 from .errors import BatteryValueError
 from .market.resolver import build_resolver
 from .packs.catalogue import load_catalogue
@@ -906,8 +907,23 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Scan a battery passport and find out what the pack is actually worth."
         ),
+        epilog=(
+            f"battery-value {__version__}. Free software under "
+            f"{licence.LICENCE}, with no warranty. Source: "
+            f"{licence.source_url()}"
+        ),
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="verbose logging")
+    # argparse runs the version string through the help formatter, which
+    # collapses whitespace, so it has to read well as one line.
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=(
+            f"battery-value {__version__} — {licence.LICENCE}, free software "
+            f"with no warranty. Source: {licence.source_url()}"
+        ),
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 

@@ -121,6 +121,8 @@
   A signature proves the record has not been altered since it was issued and
   that it came from the key shown. It does not verify what the manufacturer
   declared — that is why every line says who said it.
+  <br>
+  <a id="source-link" href="/v1/source">AGPL-3.0 — read the source</a>
 </footer>
 
 </div>
@@ -260,5 +262,16 @@ if (location.hash.length > 1) {
   lookup();
 }
 </script>
+<script>
+// The AGPL's source offer, resolved at runtime: a deployment running modified
+// code points BV_SOURCE_URL at its own tree and this link follows it. Without
+// JavaScript the href already falls back to the endpoint itself, which answers
+// the same question in JSON.
+fetch("/v1/source")
+  .then(r => r.ok ? r.json() : null)
+  .then(d => { if (d && d.source_url) document.getElementById("source-link").href = d.source_url; })
+  .catch(() => {});
+</script>
 </body>
+
 </html>

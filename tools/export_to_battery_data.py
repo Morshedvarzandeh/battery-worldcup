@@ -50,12 +50,20 @@ ORGANISATIONS = {
 
 # Every claim needs a source. These are the four this export rests on, kept
 # honest about what each one can actually support.
+#
+# The licence is per source and not a property of the export: four of these are
+# battery-value's own datasets and travel under the repository licence, while
+# the fifth is EU law, which nobody gets to relicense.
+BV_LICENCE = "AGPL-3.0-or-later"
+EU_LICENCE = "EUR-Lex reuse (Decision 2011/833/EU)"
+
 SOURCES = [
     (
         "src/bv-pack-catalogue",
         "teardown_report",
         "battery-value pack catalogue (teardowns and service documentation)",
         "https://github.com/Morshedvarzandeh/battery-worldcup",
+        BV_LICENCE,
         "Compiled from OEM service documentation, homologation filings and "
         "published pack teardowns. Individual figures vary in strength; the "
         "confidence column carries that.",
@@ -66,14 +74,17 @@ SOURCES = [
         "Regulation (EU) 2023/1542 Annex XII, recycling efficiency and "
         "material recovery targets",
         "https://eur-lex.europa.eu/eli/reg/2023/1542/oj",
+        EU_LICENCE,
         "Regulatory minima with fixed compliance dates. These are floors on "
-        "recovery, and say nothing about what a refiner pays.",
+        "recovery, and say nothing about what a refiner pays. Only the Official "
+        "Journal text is authentic.",
     ),
     (
         "src/bv-recycling-terms",
         "third_party_test",
         "battery-value recycling process and payable terms",
         "https://github.com/Morshedvarzandeh/battery-worldcup",
+        BV_LICENCE,
         "Commercial recovery rates and black-mass payable terms, benchmarked "
         "from published plant mass balances and reported offtake structures. "
         "Payables in particular are negotiated and move with the market.",
@@ -83,6 +94,7 @@ SOURCES = [
         "distributor_listing",
         "battery-value used-parts market observations",
         "https://github.com/Morshedvarzandeh/battery-worldcup",
+        BV_LICENCE,
         "Used module and component values from second-hand marketplace "
         "listings. A thin market, so treat as indicative and refresh often.",
     ),
@@ -91,6 +103,7 @@ SOURCES = [
         "dataset",
         "battery-value pack degradation profiles",
         "https://github.com/Morshedvarzandeh/battery-worldcup",
+        BV_LICENCE,
         "Fade curves per pack model, calibrated against published fleet "
         "telemetry studies, OEM warranty floors and aggregated owner-reported "
         "capacity readings. Cohort central estimates with an explicit spread; "
@@ -221,12 +234,12 @@ def emit_sources_and_provenance() -> None:
     )
     emit()
 
-    for uid, kind, title, url, note in SOURCES:
+    for uid, kind, title, url, licence, note in SOURCES:
         emit(
             "INSERT INTO source (uid, kind, title, url, license, redistributable,\n"
             "                    retrieved_at, scope_note)\n"
-            f"VALUES ({q(uid)},{q(kind)},{q(title)},{q(url)},'MIT', true, now(),\n"
-            f"        {q(note)})\n"
+            f"VALUES ({q(uid)},{q(kind)},{q(title)},{q(url)},{q(licence)},\n"
+            f"        true, now(), {q(note)})\n"
             "ON CONFLICT (uid) DO NOTHING;"
         )
         emit(
