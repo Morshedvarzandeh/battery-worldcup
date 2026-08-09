@@ -17,6 +17,7 @@ from .providers.baseline import BaselineProvider
 from .providers.csv_override import CsvOverrideProvider
 from .providers.exchange import metals_api, yahoo_provider
 from .providers.manual import ManualProvider
+from .providers.reference import ReferenceProvider
 from .types import PriceQuote, PriceSet
 
 logger = logging.getLogger(__name__)
@@ -105,6 +106,7 @@ def build_resolver(
     currency: str = "EUR",
     manual: ManualProvider | dict[str, float] | None = None,
     csv_path: str | Path | None = None,
+    reference_path: str | Path | None = None,
     offline: bool = False,
     cache: PriceCache | None = None,
     today: date | None = None,
@@ -118,14 +120,24 @@ def build_resolver(
     2. ``csv``      - subscription assessments exported locally (Fastmarkets, SMM...).
     3. ``metals_api`` - a keyed commercial API, when ``METALS_API_KEY`` is set.
     4. ``yahoo``    - free futures proxies for the exchange-traded base metals.
-    5. ``baseline`` - the bundled snapshot, so a result always exists.
+    5. ``reference`` - public agency series, when a dataset is configured.
+    6. ``baseline`` - the bundled snapshot, so a result always exists.
+
+    ``reference`` sits above the snapshot and below everything else, which is
+    where its confidence puts it: a citable monthly mean beats a hand-maintained
+    figure of unknown age, and loses to anything struck on a day. It needs no
+    network, so it is also the only rung above ``baseline`` that survives
+    ``offline=True`` -- which is the case that previously had nothing between a
+    valuation and the bundled snapshot.
 
     Args:
         currency: Currency every quote is converted into.
         manual: Caller-supplied prices, or a plain ``{form: price_per_tonne}`` map.
         csv_path: Local assessment CSV. Defaults to ``$BV_PRICE_CSV``.
+        reference_path: Public reference dataset. Defaults to
+            ``$BV_REFERENCE_PRICES``; the provider is skipped when neither is set.
         offline: Skip all network providers, including the ECB FX feed.
-        extra_providers: Inserted ahead of the baseline provider.
+        extra_providers: Inserted ahead of the reference and baseline providers.
     """
     providers: list[PriceProvider] = []
 
@@ -147,6 +159,12 @@ def build_resolver(
         providers.append(yahoo_provider(cache=cache))
 
     providers.extend(extra_providers)
+
+    # Always in the chain, even with no dataset configured. resolve() skips
+    # unavailable providers anyway, and listing it means `describe_chain` tells
+    # an operator the rung exists and how to fill it, rather than hiding a
+    # capability behind an environment variable nobody knows to set.
+    providers.append(ReferenceProvider(reference_path))
     providers.append(BaselineProvider())
 
     return PriceResolver(

@@ -31,6 +31,15 @@ class PriceQuality(str, Enum):
     MANUAL = "manual"
     """Supplied by the caller, e.g. an offtake price the holder has been quoted."""
 
+    REFERENCE = "reference"
+    """A public-agency series, e.g. the World Bank Pink Sheet or USGS.
+
+    Redistributable and citable, which the subscription assessments are not,
+    but published monthly or annually as an average over a period rather than
+    as a spot price. Good enough to anchor a valuation, never good enough to
+    settle a trade on.
+    """
+
     BASELINE = "baseline"
     """The bundled dated snapshot. Always available, never current."""
 
@@ -45,6 +54,7 @@ _BASE_CONFIDENCE: dict[PriceQuality, float] = {
     PriceQuality.BENCHMARK: 0.95,
     PriceQuality.MANUAL: 0.90,
     PriceQuality.DELAYED: 0.82,
+    PriceQuality.REFERENCE: 0.70,
     PriceQuality.BASELINE: 0.55,
 }
 
@@ -70,6 +80,14 @@ class PriceQuote:
     quality: PriceQuality
     source_detail: str = ""
     url: str | None = None
+
+    # A public series publishes an average over a period, not a price struck on
+    # a day. Recording the window keeps "the July average" from being read as
+    # "the price on 31 July": same as_of, materially different claim. Both NULL
+    # for a spot quote, which is what every exchange and assessment provider
+    # returns.
+    period_start: date | None = None
+    period_end: date | None = None
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "currency", normalise_currency(self.currency))
@@ -129,14 +147,27 @@ class PriceQuote:
                 else f"converted from {self.currency} at {rate:.4f}"
             ),
             url=self.url,
+            period_start=self.period_start,
+            period_end=self.period_end,
         )
+
+    @property
+    def is_period_average(self) -> bool:
+        """Whether this quote averages a window rather than pricing a day."""
+        return self.period_start is not None and self.period_end is not None
 
     def describe(self) -> str:
         """One-line human-readable provenance string."""
         label = get_traded_form(self.form).label
+        window = (
+            f" [avg {self.period_start.isoformat()}..{self.period_end.isoformat()}]"
+            if self.is_period_average
+            else ""
+        )
         return (
             f"{label}: {self.price:,.2f} {self.currency}/{self.unit.value} "
-            f"as of {self.as_of.isoformat()} [{self.quality.value}] via {self.source}"
+            f"as of {self.as_of.isoformat()}{window} "
+            f"[{self.quality.value}] via {self.source}"
         )
 
 

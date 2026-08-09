@@ -225,9 +225,19 @@ class TestHttpJsonProvider:
 
 
 class TestResolverChain:
-    def test_offline_chain_is_baseline_only(self, offline_resolver):
-        keys = [provider.key for provider in offline_resolver.providers]
-        assert keys == ["baseline"]
+    def test_offline_chain_reaches_no_network(self, offline_resolver, monkeypatch):
+        monkeypatch.delenv("BV_REFERENCE_PRICES", raising=False)
+        assert not any(p.requires_network for p in offline_resolver.providers)
+
+    def test_offline_answers_from_the_snapshot_when_nothing_else_is_configured(
+        self, offline_resolver, monkeypatch
+    ):
+        # The reference rung is listed even with no dataset, so an operator can
+        # see it exists; unavailable providers never answer.
+        monkeypatch.delenv("BV_REFERENCE_PRICES", raising=False)
+        available = [p.key for p in offline_resolver.available_providers()]
+        assert available == ["baseline"]
+        assert "reference" in [p.key for p in offline_resolver.providers]
 
     def test_manual_beats_baseline(self, isolated_cache):
         resolver = build_resolver(

@@ -44,7 +44,8 @@ Providers are tried in order; the first that answers wins.
 | 2 | `csv`        | `benchmark` | no  | Whatever is in your CSV |
 | 3 | `metals_api` | `live`      | yes | LME base metals, cobalt, lithium |
 | 4 | `yahoo`      | `delayed`   | no  | Copper, aluminium, steel (futures proxies) |
-| 5 | `baseline`   | `baseline`  | no  | Everything, as a dated snapshot |
+| 5 | `reference`  | `reference` | no  | Whatever public series you have imported |
+| 6 | `baseline`   | `baseline`  | no  | Everything, as a dated snapshot |
 
 ```python
 from battery_value.market import build_resolver
@@ -124,7 +125,52 @@ It covers copper, aluminium and steel — real, but a minority of a lithium-ion
 pack's material value, and futures are a proxy for physical metal rather than
 the same thing. Everything from here is tagged `delayed`.
 
-### 5. The bundled baseline
+### 5. Public reference series
+
+The subscription assessments are the right numbers and cannot be redistributed.
+The public agencies — the World Bank Pink Sheet, USGS Mineral Commodity
+Summaries, and national statistics offices — publish worse numbers that anyone
+may pass on. This rung imports those.
+
+It ships **no data**. Inventing plausible figures would produce a valuation that
+looks sourced and is not, so with nothing configured the provider reports itself
+unavailable and the chain falls through to the snapshot.
+
+```bash
+# You download the file; the tool never fetches
+python tools/import_reference_prices.py \
+    --source worldbank-pinksheet \
+    --input CMO-Historical-Data-Monthly.csv \
+    --period 2026-07 \
+    --output /etc/battery-value/reference_prices.json
+
+export BV_REFERENCE_PRICES=/etc/battery-value/reference_prices.json
+```
+
+Two rules make this safe to redistribute in turn:
+
+- **A licence that refuses.** Every source declares one, and anything outside
+  `public-domain`, `CC0-1.0`, `CC-BY-4.0`, `CC-BY-SA-4.0` and `ODC-BY-1.0` is
+  rejected at load, by name. A warning would be discovered after the data had
+  been passed on, which is too late. Attribution lines travel with the quotes,
+  because that is what CC-BY actually requires.
+- **A period, not a day.** These series publish an average over a month or a
+  year. The window travels on the quote and `as_of` is the *close* of it, so a
+  July mean is never read as a price struck on 31 July, and the ordinary
+  staleness decay prices in the lag.
+
+Quotes are tagged `quality=reference` at 0.70 base confidence: above a
+hand-maintained snapshot of unknown age, below anything struck on a day. Because
+it needs no network, it is the only rung above `baseline` that survives
+`offline=True`.
+
+The `worldbank-pinksheet` and `usgs-mcs` adapters assert their expected column
+layouts and **refuse** a file that does not match, rather than guessing at a
+column and emitting a plausible wrong number. If one refuses a file you believe
+is correct, the published layout has changed: use `--source csv` with an extract
+you have mapped yourself.
+
+### 6. The bundled baseline
 
 `market/data/baseline_prices.json` is a dated snapshot with a documented
 reference for every line. It guarantees the module works offline, with no keys,
