@@ -9,18 +9,18 @@ model card (template in `CONTRIBUTING.md`) once implemented. Status values: `pla
 
 | Model | Input | Output | Notes | Status |
 | --- | --- | --- | --- | --- |
-| Last-known SOH | Last label | SOH nowcast or forecast | Lower bound for forecasting | planned |
-| Linear extrapolation | Last k labels | Trajectory | Surprisingly strong before the knee | planned |
-| Dataset mean trajectory | Cycle index | SOH | Shows how much a task depends on cell identity | planned |
+| Last-known SOH | Last label | SOH nowcast or forecast | Lower bound for forecasting | done (`last_known`) |
+| Linear extrapolation | Last k labels | Trajectory | Surprisingly strong before the knee | done (`linear_extrapolation`) |
+| Dataset mean trajectory | Cycle index | SOH | Shows how much a task depends on cell identity | done (`mean_trajectory`, plus `constant`) |
 
 ## Empirical aging models (phase 3, family S7)
 
 | Model | Input | Output | Notes | Status |
 | --- | --- | --- | --- | --- |
-| Power law in cycles or time | Capacity history | Trajectory | Fitted per cell; exponent near 0.5 when SEI-dominated | planned |
+| Power law in cycles or time | Capacity history | Trajectory | Fitted per cell; exponent near 0.5 when SEI-dominated | done (`empirical_fade`, form `power`) |
 | Calendar plus cycling superposition (Arrhenius, SOC and DoD terms) | Stress history | Trajectory | In the style of Schmalstieg et al. (2014) and Wang et al. (2011) | planned |
-| Bi-exponential | Capacity history | Trajectory | Common in RUL papers on the NASA data | planned |
-| Knee detection (Bacon-Watts, double-linear) | Capacity history | Knee onset and knee point | Used for pre- and post-knee reporting | planned |
+| Bi-exponential | Capacity history | Trajectory | Common in RUL papers on the NASA data | done (`empirical_fade`, form `biexponential`) |
+| Knee detection (Bacon-Watts) | Capacity history | Knee onset and knee point | Used for pre- and post-knee reporting | done (`detect_knee`) |
 
 ## Model-based filters (phase 3, family S2)
 
@@ -36,11 +36,11 @@ model card (template in `CONTRIBUTING.md`) once implemented. Status values: `pla
 
 | Model | Input | Output | Notes | Status |
 | --- | --- | --- | --- | --- |
-| Ridge and elastic net | Feature vector | SOH | With nested cross-validation | planned |
-| Gaussian process regression | Feature vector | SOH with variance | ARD kernels; forecasting variant after Richardson et al. (2017) | planned |
-| Support vector regression | Feature vector | SOH | ICA features after Weng et al. (2013) | planned |
-| Random forest and extra trees | Feature vector | SOH | Robust default | planned |
-| Gradient boosting (LightGBM or XGBoost) | Feature vector | SOH | Strong tabular baseline | planned |
+| Ridge and elastic net | Feature vector | SOH | Nested cross-validation still to add | done (`feature_regressor`) |
+| Gaussian process regression | Feature vector | SOH with variance | Reports `soh_std`; ARD kernels still to add | done (`feature_regressor`) |
+| Support vector regression | Feature vector | SOH | ICA features after Weng et al. (2013) | done (`feature_regressor`) |
+| Random forest | Feature vector | SOH | Robust default; extra trees still to add | done (`feature_regressor`) |
+| Gradient boosting | Feature vector | SOH | scikit-learn for now; LightGBM later | done (`feature_regressor`) |
 | Early-life elastic net (Severson features) | First 100 cycles | Cycle life | Reproduction anchor on MATR | planned |
 | Relaxation-feature regressor (variance, skewness, maximum) | Rest voltage after charge | Capacity | After Zhu et al. (2022) on the Tongji data | planned |
 | EIS-feature Gaussian process | Impedance spectrum | Capacity and RUL | After Zhang et al. (2020) on the Cambridge data | planned |
@@ -84,6 +84,18 @@ model card (template in `CONTRIBUTING.md`) once implemented. Status values: `pla
 | Conformal prediction | Any model | Calibrated intervals | planned |
 | Fine-tuning (k-shot) | Any trainable model | Adapted model | planned |
 | Domain-adversarial adaptation | Deep models | Adapted encoder | planned |
+
+## The model interface
+
+Every model subclasses `SOHModel` and implements `_fit(data)` and `_predict(data)`, where
+`data` is a `ModelData` carrying the targets to predict, the labels the task makes visible,
+the feature table, the cycle table and the bundle. What a model may see is decided by the task
+and the split, never by the model: `nowcast_views` hides every label of the cells being scored,
+and `forecast_views` reveals a target cell's own labels only up to the forecast origin.
+
+Each model declares `InputRequirements` (features, timeseries, history, full charge, rest,
+temperature, impedance, and whether it needs other labelled cells at all), so leaderboard tables
+can be filtered by what a deployment can actually provide.
 
 ## Selection criteria for adding a model
 

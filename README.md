@@ -24,7 +24,8 @@ whether it knows when it is wrong, and what it costs to run.
 
 ## Status
 
-Phase 0 (foundation) is complete; phases 1 (data layer) and 2 (feature layer) have started:
+Phase 0 (foundation) is complete; phases 1 (data layer), 2 (feature layer) and 3 (baselines)
+have started:
 
 - the documentation set, decision records and contribution templates;
 - the `battery_worldcup` package: canonical schema with Parquet storage, a synthetic-cell
@@ -35,6 +36,10 @@ Phase 0 (foundation) is complete; phases 1 (data layer) and 2 (feature layer) ha
 - the first part of the feature layer: incremental capacity and differential voltage curves
   with peak extraction, partial-charge window features, constant-voltage phase features,
   relaxation features, and per-cycle extraction with an availability report;
+- the model interface plus the first baselines: naive references, empirical fade laws with
+  Bacon-Watts knee detection, and feature-based regressors (ridge, elastic net, Gaussian
+  process, support vector, random forest, gradient boosting);
+- task views that enforce label visibility, so a model cannot see the labels it is scored on;
 - CI running ruff and pytest on Python 3.11 and 3.12.
 
 See [ROADMAP.md](ROADMAP.md) for what comes next.
@@ -88,10 +93,10 @@ battery-worldcup/
 ├── src/battery_worldcup/
 │   ├── data/                  # schema.py, registry.py, cache.py, synthetic.py, loaders/
 │   ├── labels/                # SOH labels from reference tests (soh.py)
-│   ├── tasks/                 # splits.py now; task definitions in phase 6
+│   ├── tasks/                 # splits.py and assemble.py; full task definitions in phase 6
 │   ├── metrics/               # point.py now; trajectory, probabilistic and cost metrics in phase 6
 │   ├── features/              # ica.py, partial_charge.py, relaxation.py, extract.py; EIS and thermal in phase 2
-│   ├── models/                # phases 3 to 5: empirical/, filters/, ml/, deep/, physics/, hybrid/
+│   ├── models/                # base.py, naive.py, empirical.py, regression.py; filters, deep and physics next
 │   ├── benchmark/             # phase 6: runner, result schema, leaderboard builder
 │   └── cli.py                 # `bwc data ...`, `bwc synth`, `bwc labels`
 ├── configs/                   # phase 6: experiment configs (dataset x task x model x split x seed)

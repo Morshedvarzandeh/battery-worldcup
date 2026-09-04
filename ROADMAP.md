@@ -138,6 +138,11 @@ Definition of done
 
 ## Phase 3 — Baselines (the group stage)
 
+Status: in progress. The model interface, the naive baselines, the empirical fade laws with
+knee detection, and the feature-based regressors exist and run from the task views. The
+equivalent-circuit filters, the early-life cycle-life predictor, nested cross-validation and
+the model cards are open.
+
 Objective: honest, tuned baselines for each family before any deep model exists.
 
 Deliverables
