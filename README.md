@@ -37,8 +37,9 @@ have started:
   with peak extraction, partial-charge window features, constant-voltage phase features,
   relaxation features, and per-cycle extraction with an availability report;
 - the model interface plus the first baselines: naive references, empirical fade laws with
-  Bacon-Watts knee detection, and feature-based regressors (ridge, elastic net, Gaussian
-  process, support vector, random forest, gradient boosting);
+  Bacon-Watts knee detection, feature-based regressors (ridge, elastic net, Gaussian process,
+  support vector, random forest, gradient boosting), and an equivalent-circuit Kalman filter
+  that needs no aging dataset at all;
 - task views that enforce label visibility, so a model cannot see the labels it is scored on;
 - CI running ruff and pytest on Python 3.11 and 3.12.
 

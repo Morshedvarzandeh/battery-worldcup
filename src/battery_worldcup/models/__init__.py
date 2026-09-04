@@ -13,7 +13,9 @@ from battery_worldcup.models.base import (
     get_model,
     register,
 )
+from battery_worldcup.models.ecm import ECMParameters, OCVCurve, estimate_r0, simulate
 from battery_worldcup.models.empirical import FORMS, EmpiricalFade, Knee, detect_knee, fit_form
+from battery_worldcup.models.filters import ECMKalmanFilter, build_ocv_from_cycle
 from battery_worldcup.models.naive import (
     ConstantSOH,
     LastKnownSOH,
@@ -27,6 +29,8 @@ __all__ = [
     "FORMS",
     "MODELS",
     "ConstantSOH",
+    "ECMKalmanFilter",
+    "ECMParameters",
     "EmpiricalFade",
     "FeatureRegressor",
     "InputRequirements",
@@ -35,11 +39,15 @@ __all__ = [
     "LinearExtrapolation",
     "MeanTrajectory",
     "ModelData",
+    "OCVCurve",
     "NotFittedError",
     "SOHModel",
+    "build_ocv_from_cycle",
     "detect_knee",
+    "estimate_r0",
     "fit_form",
     "get_model",
     "make_regressor",
     "register",
+    "simulate",
 ]

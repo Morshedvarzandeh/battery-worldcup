@@ -26,7 +26,7 @@ model card (template in `CONTRIBUTING.md`) once implemented. Status values: `pla
 
 | Model | Input | Output | Notes | Status |
 | --- | --- | --- | --- | --- |
-| ECM (1RC or 2RC) with joint EKF | I, V, T streams | SOC, Q, R | Plett formulation | planned |
+| ECM (1RC) with EKF and recursive capacity estimation | I, V, T streams | SOC, Q, R | `ecm_ekf`; capacity read off the discharge excursion | done |
 | ECM with dual EKF | I, V, T streams | SOC, Q, R | Separate time scales for states and parameters | planned |
 | ECM with UKF | I, V, T streams | SOC, Q, R | Better with strongly nonlinear OCV curves | planned |
 | ECM with particle filter | I, V, T streams | Posterior over Q and R | Native uncertainty | planned |
@@ -84,6 +84,21 @@ model card (template in `CONTRIBUTING.md`) once implemented. Status values: `pla
 | Conformal prediction | Any model | Calibrated intervals | planned |
 | Fine-tuning (k-shot) | Any trainable model | Adapted model | planned |
 | Domain-adversarial adaptation | Deep models | Adapted encoder | planned |
+
+## A note on the filter and on synthetic data
+
+`ecm_ekf` tracks the state of charge of one cell with an extended Kalman filter on a Thevenin
+circuit and reads capacity from the charge delivered by a discharge divided by the state-of-charge
+excursion it caused. It needs no aging dataset, which is why its requirements set
+`training_cells` to False.
+
+It scores extremely well on the synthetic cells, and that number must not be read as an
+accuracy claim. The synthetic generator produces exactly the circuit the filter assumes, with a
+known open-circuit voltage curve and no unmodelled dynamics, so the estimator is being tested
+against its own assumptions. On real cells the open-circuit voltage curve drifts with age, the
+circuit is only an approximation, and the state of charge is far less observable in shallow
+partial cycles. Treat the synthetic result as a check that the estimator is unbiased and stable
+when its assumptions hold, and wait for the wave-1 datasets before ranking it against the others.
 
 ## The model interface
 
