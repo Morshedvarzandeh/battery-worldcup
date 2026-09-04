@@ -109,6 +109,10 @@ Definition of done
 
 ## Phase 2 — Feature layer
 
+Status: in progress (ICA/DVA with peak extraction, partial-charge windows, CV phase,
+relaxation and per-cycle extraction exist; EIS, thermal, ΔQ(V) and efficiency features are
+open).
+
 Objective: a tested library of health indicators, because most feature-based papers are not
 reproducible at the feature-extraction step.
 

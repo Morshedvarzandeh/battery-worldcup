@@ -8,7 +8,7 @@ def test_ocv_is_monotonic_and_in_range():
     soc = np.linspace(0, 1, 101)
     v = open_circuit_voltage(soc)
     assert np.all(np.diff(v) > 0)
-    assert 3.0 < v[0] < 3.3 and 4.15 < v[-1] <= 4.2
+    assert 3.3 < v[0] < 3.45 and 4.15 < v[-1] < 4.25
 
 
 def test_population_shape_and_truth(small_bundle, small_truth):

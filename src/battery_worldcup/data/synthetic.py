@@ -35,10 +35,27 @@ class SyntheticConfig:
     cycling_c_rate: float = 1.0
 
 
+PLATEAU_SOCS: tuple[float, ...] = (0.3, 0.7)
+PLATEAU_WIDTH = 0.06
+PLATEAU_DEPTH = 0.35  # reduction of dV/dSOC at the plateau centre (base slope is 0.9 V)
+
+
 def open_circuit_voltage(soc: np.ndarray | float) -> np.ndarray:
-    """A smooth, monotonic, NMC-like OCV curve spanning about 3.15 V to 4.2 V."""
+    """A smooth, monotonic OCV curve from about 3.38 V to exactly V_MAX with two plateaus.
+
+    The plateaus sit at :data:`PLATEAU_SOCS`, so incremental-capacity curves of synthetic cells
+    have peaks at known voltages (``open_circuit_voltage(0.3)`` and ``open_circuit_voltage(0.7)``
+    plus the ohmic drop).
+    """
     soc = np.asarray(soc, dtype=float)
-    return 3.3 + 0.75 * soc + 0.15 * np.tanh(6.0 * (soc - 0.5))
+    return _raw_ocv(soc) - _raw_ocv(np.asarray(1.0)) + V_MAX
+
+
+def _raw_ocv(soc: np.ndarray) -> np.ndarray:
+    v = 3.35 + 0.9 * soc
+    for centre in PLATEAU_SOCS:
+        v = v - PLATEAU_DEPTH * PLATEAU_WIDTH * np.tanh((soc - centre) / PLATEAU_WIDTH)
+    return v
 
 
 def _trapezoid(y: np.ndarray, x: np.ndarray) -> float:
@@ -146,10 +163,10 @@ def simulate_cycle(
     t0 += float(t_cv[-1])
     e_charge += V_MAX * q_rem
 
-    # Step 2: rest; the overpotential relaxes towards the OCV at full charge.
+    # Step 2: rest; the residual overpotential of the CV tail relaxes away.
     t_rest = np.linspace(0.0, 600.0, 6)[1:]
-    ocv_full = float(open_circuit_voltage(1.0))
-    v_rest = ocv_full + (V_MAX - ocv_full) * np.exp(-t_rest / 120.0)
+    v_settled = V_MAX - float(i_cv[-1]) * resistance_ohm
+    v_rest = v_settled + (V_MAX - v_settled) * np.exp(-t_rest / 120.0)
     frames.append(
         _step_frame(
             dataset=dataset,
