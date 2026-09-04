@@ -46,6 +46,9 @@ def _estimator(kind: str, **params: Any):
             **params,
         )
     if kind == "gpr":
+        # The kernel bounds are scikit-learn's defaults on purpose. Widening them to silence the
+        # "bound reached" warning let the optimiser find degenerate length scales on some folds,
+        # which tripled this model's error and its spread across folds.
         kernel = ConstantKernel(1.0) * RBF(length_scale=np.sqrt(params.pop("n_features", 10.0)))
         kernel = kernel + WhiteKernel(noise_level=1e-3)
         return GaussianProcessRegressor(

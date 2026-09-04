@@ -13,6 +13,7 @@ deployment can actually provide (a full charge? a rest? impedance?).
 
 from __future__ import annotations
 
+import inspect
 from abc import ABC, abstractmethod
 from dataclasses import asdict, dataclass, field, replace
 from typing import Any
@@ -148,12 +149,23 @@ class SOHModel(ABC):
         return out.reset_index(drop=True)
 
     def get_params(self) -> dict[str, Any]:
-        """Constructor parameters, for the result files. Override when they are not attributes."""
-        return {
-            k: v
-            for k, v in vars(self).items()
-            if not k.startswith("_") and isinstance(v, int | float | str | bool | type(None))
-        }
+        """Constructor parameters, for the result files.
+
+        Only names that appear in ``__init__`` are reported. Scraping every attribute instead
+        would fold fitted state into the record, and a model's identity would then change once
+        it had seen data. Override this when a parameter is not stored under its own name.
+        """
+        names = [n for n in inspect.signature(type(self).__init__).parameters if n != "self"]
+        return {n: getattr(self, n) for n in names if hasattr(self, n)}
+
+    @classmethod
+    def default_params(cls) -> dict[str, Any]:
+        """Default value of every constructor parameter, for compact reporting."""
+        out = {}
+        for name, parameter in inspect.signature(cls.__init__).parameters.items():
+            if name != "self" and parameter.default is not inspect.Parameter.empty:
+                out[name] = parameter.default
+        return out
 
     def info(self) -> dict[str, Any]:
         return {

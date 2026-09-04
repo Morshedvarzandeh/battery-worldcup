@@ -1,0 +1,303 @@
+{
+  "schema": "bwc-result/1",
+  "name": "gradient-boosting-nowcast",
+  "dataset": "synthetic",
+  "task": "nowcast",
+  "model": {
+    "name": "feature_regressor",
+    "family": "S3",
+    "params": {
+      "estimator": "gradient_boosting",
+      "include": null,
+      "drop_all_nan": true,
+      "clip": [
+        0.0,
+        1.2
+      ],
+      "random_state": 0
+    },
+    "requirements": {
+      "features": true,
+      "timeseries": true,
+      "history": false,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": true
+    }
+  },
+  "metrics": {
+    "mae": {
+      "mean": 0.010279786100518504,
+      "std": 0.0027460723185146856,
+      "n": 12
+    },
+    "mape": {
+      "mean": 1.2360897237240602,
+      "std": 0.37844545297686943,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.04612539232770316,
+      "std": 0.029868963973779958,
+      "n": 12
+    },
+    "n": {
+      "mean": 36.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.9712019311853858,
+      "std": 0.013309971370888076,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.013924185975767651,
+      "std": 0.004619581724580036,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009968670842173994,
+        "rmse": 0.012711496360348334,
+        "mape": 1.1272753893406964,
+        "max_abs_error": 0.0304998365471133,
+        "r2": 0.9637368131927041,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.008339112725834624,
+        "rmse": 0.010578776195178245,
+        "mape": 0.9778735806173331,
+        "max_abs_error": 0.02439092966263745,
+        "r2": 0.986976041570959,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.01474519019273757,
+        "rmse": 0.019973574712287476,
+        "mape": 1.8489728880626901,
+        "max_abs_error": 0.08046297299332683,
+        "r2": 0.9541515613059618,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009490889844607001,
+        "rmse": 0.012734585917370847,
+        "mape": 1.0711984220492703,
+        "max_abs_error": 0.03079552770743288,
+        "r2": 0.9764922653102512,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.015254199207382323,
+        "rmse": 0.019142943562833897,
+        "mape": 1.8290650917527504,
+        "max_abs_error": 0.07092974924720541,
+        "r2": 0.9501246752728686,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.00678657170165652,
+        "rmse": 0.00811252073324374,
+        "mape": 0.785692873439235,
+        "max_abs_error": 0.01902398526877469,
+        "r2": 0.9901722464728734,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009795471575516005,
+        "rmse": 0.011829323585325981,
+        "mape": 1.0970486073772934,
+        "max_abs_error": 0.022113792912213603,
+        "r2": 0.9685954600267672,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.010986143930152126,
+        "rmse": 0.020759027858414145,
+        "mape": 1.498796385294543,
+        "max_abs_error": 0.10522549073933163,
+        "r2": 0.9588474223694399,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.006896849334094469,
+        "rmse": 0.008294343769174827,
+        "mape": 0.7993074984606777,
+        "max_abs_error": 0.019845591342723345,
+        "r2": 0.9897267778564444,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007245507074535664,
+        "rmse": 0.009684304600310029,
+        "mape": 0.8164062194784207,
+        "max_abs_error": 0.029208875951085123,
+        "r2": 0.9789520649943588,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.010846401668707916,
+        "rmse": 0.01283109923564921,
+        "mape": 1.2694618983530455,
+        "max_abs_error": 0.030790039809332925,
+        "r2": 0.9760459440743043,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.01300242510882385,
+        "rmse": 0.020438235179075052,
+        "mape": 1.711977830462769,
+        "max_abs_error": 0.0902179157512607,
+        "r2": 0.9606019017776963,
+        "n": 36
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.24176526000000345,
+    "predict_seconds_per_fold": 0.008522104833294483,
+    "folds": 12
+  },
+  "config": {
+    "name": "gradient-boosting-nowcast",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "nowcast",
+      "origin": null,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "feature_regressor",
+      "params": {
+        "estimator": "gradient_boosting"
+      },
+      "seed_param": "random_state"
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "386668c6a753f7a0",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:10:16+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

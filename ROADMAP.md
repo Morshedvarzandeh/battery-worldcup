@@ -49,7 +49,7 @@ phases 4 and 5.
 | M0 | Documentation set, package skeleton, CI | 0.0.x |
 | M1 | Wave-1 datasets load into the schema with labels and cards | 0.1 |
 | M2 | Feature library and all phase-3 baselines run from configs | 0.2 |
-| M3 | First leaderboard (T1, T2, T3 on wave-1 datasets) | 0.3 |
+| M3 | First leaderboard (T1, T2, T3 on wave-1 datasets); synthetic standings done | 0.3 |
 | M4 | Deep and physics-based models on the leaderboard; wave-2 datasets | 0.4 |
 | M5 | Transfer and uncertainty brackets; tutorials; docs site | 1.0 |
 
@@ -204,6 +204,11 @@ Definition of done
 - At least one hybrid beats both its pure-ML and pure-physics parents on a transfer task.
 
 ## Phase 6 — The World Cup
+
+Status: in progress. Experiment configurations, the runner, the result format, the metrics
+module and the leaderboard builder exist, and the synthetic-dataset standings are generated
+from them. The remaining task types (T3 early-life, T4 remaining useful life, T5 degradation
+modes, T6 transfer), the frozen split files and the leakage tests in CI are open.
 
 Objective: the benchmark itself, and the first public results.
 

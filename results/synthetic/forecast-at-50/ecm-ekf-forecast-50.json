@@ -1,0 +1,402 @@
+{
+  "schema": "bwc-result/1",
+  "name": "ecm-ekf-forecast-50",
+  "dataset": "synthetic",
+  "task": "forecast@50",
+  "model": {
+    "name": "ecm_ekf",
+    "family": "S2",
+    "params": {
+      "r0_ohm": 0.05,
+      "r1_ohm": 0.0,
+      "c1_farad": 2000.0,
+      "sigma_v": 0.005,
+      "forgetting": 0.3,
+      "min_soc_span": 0.2,
+      "adapt_r0": true
+    },
+    "requirements": {
+      "features": false,
+      "timeseries": true,
+      "history": false,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": false
+    }
+  },
+  "metrics": {
+    "eol_censored_cells": {
+      "mean": 0.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "eol_cycle_mae": {
+      "mean": 2.3344790348317495,
+      "std": 0.8351898752029242,
+      "n": 12
+    },
+    "eol_scored_cells": {
+      "mean": 2.25,
+      "std": 0.4330127018922193,
+      "n": 12
+    },
+    "mae": {
+      "mean": 0.007042358421972208,
+      "std": 0.0005095054279758539,
+      "n": 12
+    },
+    "mape": {
+      "mean": 0.8299541695010716,
+      "std": 0.05584317528275879,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.009274497457958497,
+      "std": 0.0005819309242094733,
+      "n": 12
+    },
+    "n": {
+      "mean": 18.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "n_cells": {
+      "mean": 3.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.9887279319046943,
+      "std": 0.00587849061978982,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.007356024444823008,
+      "std": 0.0004297810081751917,
+      "n": 12
+    },
+    "trajectory_mae": {
+      "mean": 0.007042358421972208,
+      "std": 0.0005095054279758536,
+      "n": 12
+    },
+    "trajectory_rmse": {
+      "mean": 0.007280211909544101,
+      "std": 0.0004370324425526586,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007701834663033326,
+        "rmse": 0.007898345336684402,
+        "mape": 0.8932106807491483,
+        "max_abs_error": 0.0101597080688125,
+        "r2": 0.9796218688586117,
+        "n": 18,
+        "trajectory_rmse": 0.007873021574179294,
+        "trajectory_mae": 0.007701834663033325,
+        "eol_cycle_mae": 2.481148539108844,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.006209421252544829,
+        "rmse": 0.006633463140438895,
+        "mape": 0.735243453420388,
+        "max_abs_error": 0.008567214769570008,
+        "r2": 0.9941265466518036,
+        "n": 18,
+        "trajectory_rmse": 0.0065923607875616975,
+        "trajectory_mae": 0.006209421252544829,
+        "eol_cycle_mae": 1.2537511784368764,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.00700581345596446,
+        "rmse": 0.007351657442873462,
+        "mape": 0.8459040131280481,
+        "max_abs_error": 0.00905921932697129,
+        "r2": 0.992594222702236,
+        "n": 18,
+        "trajectory_rmse": 0.0072512275587792085,
+        "trajectory_mae": 0.00700581345596446,
+        "eol_cycle_mae": 3.3886459255411054,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007252364316346214,
+        "rmse": 0.007533237679832259,
+        "mape": 0.8454585307067013,
+        "max_abs_error": 0.009326691681901145,
+        "r2": 0.9913254324502322,
+        "n": 18,
+        "trajectory_rmse": 0.007404237717656202,
+        "trajectory_mae": 0.007252364316346214,
+        "eol_cycle_mae": 2.483796189590457,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.0072447567142467605,
+        "rmse": 0.007603237696125373,
+        "mape": 0.8479521793390491,
+        "max_abs_error": 0.009326691681901145,
+        "r2": 0.9918082012882922,
+        "n": 18,
+        "trajectory_rmse": 0.007487323069519357,
+        "trajectory_mae": 0.0072447567142467605,
+        "eol_cycle_mae": 3.588425588115534,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007068453607346197,
+        "rmse": 0.007323497192009121,
+        "mape": 0.8490533583852846,
+        "max_abs_error": 0.00905921932697129,
+        "r2": 0.9876683703791909,
+        "n": 18,
+        "trajectory_rmse": 0.007225122182288895,
+        "trajectory_mae": 0.007068453607346197,
+        "eol_cycle_mae": 2.483796189590457,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007701834663033326,
+        "rmse": 0.007898345336684402,
+        "mape": 0.8932106807491483,
+        "max_abs_error": 0.0101597080688125,
+        "r2": 0.9796218688586117,
+        "n": 18,
+        "trajectory_rmse": 0.007873021574179294,
+        "trajectory_mae": 0.007701834663033325,
+        "eol_cycle_mae": 2.481148539108844,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.006154388703262546,
+        "rmse": 0.0065845680001512166,
+        "mape": 0.7296004595308038,
+        "max_abs_error": 0.008567214769570008,
+        "r2": 0.9958257204904282,
+        "n": 18,
+        "trajectory_rmse": 0.006535380812188854,
+        "trajectory_mae": 0.006154388703262546,
+        "eol_cycle_mae": 1.1205647367205909,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007068453607346197,
+        "rmse": 0.007323497192009121,
+        "mape": 0.8490533583852846,
+        "max_abs_error": 0.00905921932697129,
+        "r2": 0.9876683703791909,
+        "n": 18,
+        "trajectory_rmse": 0.007225122182288895,
+        "trajectory_mae": 0.007068453607346197,
+        "eol_cycle_mae": 2.483796189590457,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.007701834663033326,
+        "rmse": 0.007898345336684402,
+        "mape": 0.8932106807491483,
+        "max_abs_error": 0.0101597080688125,
+        "r2": 0.9796218688586117,
+        "n": 18,
+        "trajectory_rmse": 0.007873021574179294,
+        "trajectory_mae": 0.007701834663033325,
+        "eol_cycle_mae": 2.481148539108844,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.006751433097354493,
+        "rmse": 0.007071656091567241,
+        "mape": 0.8155800265136804,
+        "max_abs_error": 0.00852268272330714,
+        "r2": 0.9888479672581625,
+        "n": 18,
+        "trajectory_rmse": 0.007015039568036861,
+        "trajectory_mae": 0.006751433097354493,
+        "eol_cycle_mae": 3.003491780254876,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.006647712320154813,
+        "rmse": 0.007152442892816217,
+        "mape": 0.7619726123561725,
+        "max_abs_error": 0.009326691681901145,
+        "r2": 0.9960047446809596,
+        "n": 18,
+        "trajectory_rmse": 0.0070076643136713496,
+        "trajectory_mae": 0.006647712320154813,
+        "eol_cycle_mae": 0.764035022814106,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.022767396999938683,
+    "predict_seconds_per_fold": 2.3927652060000355,
+    "folds": 12
+  },
+  "config": {
+    "name": "ecm-ekf-forecast-50",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "forecast",
+      "origin": 50,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "ecm_ekf",
+      "params": {},
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "7b7b96810b1e7fa6",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:08:42+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

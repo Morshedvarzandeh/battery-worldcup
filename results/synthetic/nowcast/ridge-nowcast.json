@@ -1,0 +1,302 @@
+{
+  "schema": "bwc-result/1",
+  "name": "ridge-nowcast",
+  "dataset": "synthetic",
+  "task": "nowcast",
+  "model": {
+    "name": "feature_regressor",
+    "family": "S3",
+    "params": {
+      "estimator": "ridge",
+      "include": null,
+      "drop_all_nan": true,
+      "clip": [
+        0.0,
+        1.2
+      ]
+    },
+    "requirements": {
+      "features": true,
+      "timeseries": true,
+      "history": false,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": true
+    }
+  },
+  "metrics": {
+    "mae": {
+      "mean": 0.008096933517349079,
+      "std": 0.0026827917943227572,
+      "n": 12
+    },
+    "mape": {
+      "mean": 0.9135682882369758,
+      "std": 0.30393547643467733,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.018777824240035212,
+      "std": 0.003351326387362448,
+      "n": 12
+    },
+    "n": {
+      "mean": 36.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.9838820813155972,
+      "std": 0.009673859314463126,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.009827377920232671,
+      "std": 0.0027753072588547274,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009462164681281296,
+        "rmse": 0.011763680101457863,
+        "mape": 1.060265960533775,
+        "max_abs_error": 0.024068636961244838,
+        "r2": 0.9689430341772871,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.006993421489378143,
+        "rmse": 0.009126550347455702,
+        "mape": 0.7853940030758538,
+        "max_abs_error": 0.01957462451810288,
+        "r2": 0.9903063920581299,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.011870733166394606,
+        "rmse": 0.013647568704282577,
+        "mape": 1.365215341096444,
+        "max_abs_error": 0.02186338026876422,
+        "r2": 0.978594590888297,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007196975770701941,
+        "rmse": 0.010056901023523244,
+        "mape": 0.7742804108886104,
+        "max_abs_error": 0.01851492985284664,
+        "r2": 0.9853388013957666,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.013271647484437115,
+        "rmse": 0.01425039323075838,
+        "mape": 1.4876600390653243,
+        "max_abs_error": 0.021693386253762048,
+        "r2": 0.9723610210211178,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.004160332082198481,
+        "rmse": 0.005113907919779578,
+        "mape": 0.46880114925401456,
+        "max_abs_error": 0.013925932548536468,
+        "r2": 0.9960947537456505,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009685250069326615,
+        "rmse": 0.011666903428308006,
+        "mape": 1.0838993796912377,
+        "max_abs_error": 0.023600812718110875,
+        "r2": 0.969451927093421,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.005966720586104267,
+        "rmse": 0.008025817534893644,
+        "mape": 0.6965785324573353,
+        "max_abs_error": 0.015559735978449951,
+        "r2": 0.9938487754208741,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.004160332082198481,
+        "rmse": 0.005113907919779578,
+        "mape": 0.46880114925401456,
+        "max_abs_error": 0.013925932548536468,
+        "r2": 0.9960947537456505,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007553440991513483,
+        "rmse": 0.009258160278605173,
+        "mape": 0.8481133131862363,
+        "max_abs_error": 0.01863318607857123,
+        "r2": 0.9807636795814146,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.009624826647274261,
+        "rmse": 0.011083656397124905,
+        "mape": 1.0977631462847552,
+        "max_abs_error": 0.01766577399170055,
+        "r2": 0.9821261775657848,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007217357157380259,
+        "rmse": 0.00882108815682342,
+        "mape": 0.8260470340561078,
+        "max_abs_error": 0.01630755916179638,
+        "r2": 0.992661069093773,
+        "n": 36
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.011445027833284863,
+    "predict_seconds_per_fold": 0.010080565166693608,
+    "folds": 12
+  },
+  "config": {
+    "name": "ridge-nowcast",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "nowcast",
+      "origin": null,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "feature_regressor",
+      "params": {
+        "estimator": "ridge"
+      },
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "96c6b22e4b81cc99",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:11:30+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

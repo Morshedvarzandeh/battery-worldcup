@@ -1,0 +1,394 @@
+{
+  "schema": "bwc-result/1",
+  "name": "mean-trajectory-forecast-50",
+  "dataset": "synthetic",
+  "task": "forecast@50",
+  "model": {
+    "name": "mean_trajectory",
+    "family": "S0",
+    "params": {},
+    "requirements": {
+      "features": false,
+      "timeseries": false,
+      "history": false,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": true
+    }
+  },
+  "metrics": {
+    "eol_censored_cells": {
+      "mean": 0.75,
+      "std": 0.4330127018922193,
+      "n": 12
+    },
+    "eol_cycle_mae": {
+      "mean": 6.944635997358856,
+      "std": 2.715662481227115,
+      "n": 12
+    },
+    "eol_scored_cells": {
+      "mean": 2.25,
+      "std": 0.4330127018922193,
+      "n": 12
+    },
+    "mae": {
+      "mean": 0.04594523596673749,
+      "std": 0.010680439373519033,
+      "n": 12
+    },
+    "mape": {
+      "mean": 5.943183295171463,
+      "std": 1.492075329302407,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.17426935488501502,
+      "std": 0.0436037047736428,
+      "n": 12
+    },
+    "n": {
+      "mean": 18.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "n_cells": {
+      "mean": 3.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.28302111123040546,
+      "std": 0.19802640617547937,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.0631538696103255,
+      "std": 0.01315219205632785,
+      "n": 12
+    },
+    "trajectory_mae": {
+      "mean": 0.04594523596673749,
+      "std": 0.010680439373519037,
+      "n": 12
+    },
+    "trajectory_rmse": {
+      "mean": 0.05613861872383847,
+      "std": 0.012770385964336708,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.04205493178408094,
+        "rmse": 0.054958629114690995,
+        "mape": 4.8238500489877865,
+        "max_abs_error": 0.14627520281560236,
+        "r2": 0.013348231980200298,
+        "n": 18,
+        "trajectory_rmse": 0.04582529362523189,
+        "trajectory_mae": 0.04205493178408095,
+        "eol_cycle_mae": 3.5146725898700524,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.04491876600104729,
+        "rmse": 0.06482504378986782,
+        "mape": 6.212096764172335,
+        "max_abs_error": 0.1831561686115325,
+        "r2": 0.4390831058414789,
+        "n": 18,
+        "trajectory_rmse": 0.05495082026514662,
+        "trajectory_mae": 0.04491876600104729,
+        "eol_cycle_mae": 10.805230594008743,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.046071728635173635,
+        "rmse": 0.06949865556055411,
+        "mape": 6.672530461291223,
+        "max_abs_error": 0.2179575080158449,
+        "r2": 0.3381601244026413,
+        "n": 18,
+        "trajectory_rmse": 0.06087557926343573,
+        "trajectory_mae": 0.046071728635173635,
+        "eol_cycle_mae": 9.017196700552326,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.05479171059252576,
+        "rmse": 0.07471337554056469,
+        "mape": 6.4994782680961,
+        "max_abs_error": 0.20230178949776856,
+        "r2": 0.1467403479264956,
+        "n": 18,
+        "trajectory_rmse": 0.06505670527296077,
+        "trajectory_mae": 0.05479171059252575,
+        "eol_cycle_mae": 5.229975911654208,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.06229377502462009,
+        "rmse": 0.07388611808163995,
+        "mape": 7.70141986865645,
+        "max_abs_error": 0.17187647701776576,
+        "r2": 0.22641536352406733,
+        "n": 18,
+        "trajectory_rmse": 0.07065703739973793,
+        "trajectory_mae": 0.0622937750246201,
+        "eol_cycle_mae": 7.92879888220962,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.03300733568973369,
+        "rmse": 0.04521275846659414,
+        "mape": 4.2964811808846575,
+        "max_abs_error": 0.10884564899285065,
+        "r2": 0.5299917917989168,
+        "n": 18,
+        "trajectory_rmse": 0.044651861630541106,
+        "trajectory_mae": 0.03300733568973369,
+        "eol_cycle_mae": 5.229975911654208,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.04076043269421928,
+        "rmse": 0.052444067515404515,
+        "mape": 4.672337887432364,
+        "max_abs_error": 0.13381732713183092,
+        "r2": 0.10156874536340377,
+        "n": 18,
+        "trajectory_rmse": 0.04362568250902767,
+        "trajectory_mae": 0.04076043269421927,
+        "eol_cycle_mae": 3.5146725898700524,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.04627542261061552,
+        "rmse": 0.0753551166744812,
+        "mape": 6.919785602130389,
+        "max_abs_error": 0.24455254549917205,
+        "r2": 0.4532957562184379,
+        "n": 18,
+        "trajectory_rmse": 0.06291941307968037,
+        "trajectory_mae": 0.04627542261061552,
+        "eol_cycle_mae": 9.623795982058889,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.03300733568973369,
+        "rmse": 0.04521275846659414,
+        "mape": 4.2964811808846575,
+        "max_abs_error": 0.10884564899285065,
+        "r2": 0.5299917917989168,
+        "n": 18,
+        "trajectory_rmse": 0.044651861630541106,
+        "trajectory_mae": 0.03300733568973369,
+        "eol_cycle_mae": 5.229975911654208,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.04209979135073759,
+        "rmse": 0.05820973238158773,
+        "mape": 4.8649864652454164,
+        "max_abs_error": 0.16605817272408763,
+        "r2": -0.10683611515265867,
+        "n": 18,
+        "trajectory_rmse": 0.04943931309597801,
+        "trajectory_mae": 0.042099791350737596,
+        "eol_cycle_mae": 3.5146725898700524,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.03674960247222857,
+        "rmse": 0.05392329221454842,
+        "mape": 5.029198207340074,
+        "max_abs_error": 0.16980529139654432,
+        "r2": 0.3515678027410857,
+        "n": 18,
+        "trajectory_rmse": 0.04489325852345084,
+        "trajectory_mae": 0.03674960247222857,
+        "eol_cycle_mae": 9.863630080559636,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.0693119990561338,
+        "rmse": 0.08960688751737823,
+        "mape": 9.329553606936116,
+        "max_abs_error": 0.23774047792433017,
+        "r2": 0.37292638832187963,
+        "n": 18,
+        "trajectory_rmse": 0.08611659839032955,
+        "trajectory_mae": 0.06931199905613382,
+        "eol_cycle_mae": 9.863034224344297,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.0014600427500302733,
+    "predict_seconds_per_fold": 0.0009507814999854721,
+    "folds": 12
+  },
+  "config": {
+    "name": "mean-trajectory-forecast-50",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "forecast",
+      "origin": 50,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "mean_trajectory",
+      "params": {},
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "eb9bf31729fbc71d",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:10:35+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

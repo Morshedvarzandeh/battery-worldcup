@@ -89,7 +89,14 @@ Every (dataset, task) table must include the naive baselines and at least one mo
 from families S2, S3 and S7 before any deep or hybrid result is published on it. A deep
 model that does not beat the feature-based baseline is still listed; that is information.
 
-## 5.7 Reproducibility
+## 5.7 What exists today
+
+Tasks T1 (nowcast) and T2 (trajectory forecast) run end to end: `bwc run <config>` writes a
+result file and `bwc leaderboard` renders [the standings](../LEADERBOARD.md) from every result
+under `results/`. Splits are cell-level, stratified by lifetime and checked for leakage on
+construction. T3 to T6, the frozen split files and the CI leakage tests are still open.
+
+## 5.8 Reproducibility
 
 - `bwc run configs/<file>.yaml --seed 0` must regenerate a result within a tolerance
   documented per model (tolerance is needed for GPU non-determinism).

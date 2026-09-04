@@ -1,0 +1,403 @@
+{
+  "schema": "bwc-result/1",
+  "name": "empirical-biexponential-forecast-50",
+  "dataset": "synthetic",
+  "task": "forecast@50",
+  "model": {
+    "name": "empirical_fade",
+    "family": "S7",
+    "params": {
+      "form": "biexponential",
+      "min_points": 4,
+      "clip": [
+        0.0,
+        1.2
+      ]
+    },
+    "requirements": {
+      "features": false,
+      "timeseries": false,
+      "history": true,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": false
+    }
+  },
+  "metrics": {
+    "eol_censored_cells": {
+      "mean": 1.0,
+      "std": 0.5773502691896257,
+      "n": 12
+    },
+    "eol_cycle_mae": {
+      "mean": 7.740933466072854,
+      "std": 4.8449553377848575,
+      "n": 12
+    },
+    "eol_scored_cells": {
+      "mean": 1.5,
+      "std": 0.6454972243679028,
+      "n": 12
+    },
+    "mae": {
+      "mean": 0.028923462339836347,
+      "std": 0.012968680394901505,
+      "n": 12
+    },
+    "mape": {
+      "mean": 4.231528583108463,
+      "std": 2.103531830251274,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.18823638643175036,
+      "std": 0.06423620229924529,
+      "n": 12
+    },
+    "n": {
+      "mean": 18.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "n_cells": {
+      "mean": 3.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.4617170496892444,
+      "std": 0.24016260776284556,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.05639383529022881,
+      "std": 0.023388657736862595,
+      "n": 12
+    },
+    "trajectory_mae": {
+      "mean": 0.028923462339836347,
+      "std": 0.012968680394901505,
+      "n": 12
+    },
+    "trajectory_rmse": {
+      "mean": 0.042431222659098954,
+      "std": 0.020731906168106547,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.012770113199735065,
+        "rmse": 0.02352458758480145,
+        "mape": 1.6080325096455974,
+        "max_abs_error": 0.0923239872930759,
+        "r2": 0.819225922905597,
+        "n": 18,
+        "trajectory_rmse": 0.017347482609420747,
+        "trajectory_mae": 0.012770113199735067,
+        "eol_cycle_mae": 4.809201428592658,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.042587217411883975,
+        "rmse": 0.07501463072126055,
+        "mape": 6.131324072751795,
+        "max_abs_error": 0.20171048980105655,
+        "r2": 0.24888776836827775,
+        "n": 18,
+        "trajectory_rmse": 0.06503449942444668,
+        "trajectory_mae": 0.04258721741188398,
+        "eol_cycle_mae": 7.619068678228409,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.03339009078258456,
+        "rmse": 0.07447390394144691,
+        "mape": 5.371871537121434,
+        "max_abs_error": 0.27305077418299795,
+        "r2": 0.2400091499736735,
+        "n": 18,
+        "trajectory_rmse": 0.05014070653415057,
+        "trajectory_mae": 0.03339009078258456,
+        "eol_cycle_mae": 12.894388775803591,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02694642796514178,
+        "rmse": 0.05641110233218535,
+        "mape": 3.8148862129150225,
+        "max_abs_error": 0.19541186866028393,
+        "r2": 0.5135774881917894,
+        "n": 18,
+        "trajectory_rmse": 0.037202202068377786,
+        "trajectory_mae": 0.02694642796514178,
+        "eol_cycle_mae": 3.40485595917923,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.023055771861383398,
+        "rmse": 0.05083321516342757,
+        "mape": 3.3828572121588767,
+        "max_abs_error": 0.18738312848543726,
+        "r2": 0.6338346074028857,
+        "n": 18,
+        "trajectory_rmse": 0.034728600362715176,
+        "trajectory_mae": 0.023055771861383398,
+        "eol_cycle_mae": 9.440342246139423,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02863705144731378,
+        "rmse": 0.05680963282349138,
+        "mape": 4.042924963429823,
+        "max_abs_error": 0.19541186866028393,
+        "r2": 0.2579598609238668,
+        "n": 18,
+        "trajectory_rmse": 0.03905291362018402,
+        "trajectory_mae": 0.02863705144731378,
+        "eol_cycle_mae": 3.40485595917923,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 2,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.012770113199735065,
+        "rmse": 0.02352458758480145,
+        "mape": 1.6080325096455974,
+        "max_abs_error": 0.0923239872930759,
+        "r2": 0.819225922905597,
+        "n": 18,
+        "trajectory_rmse": 0.017347482609420747,
+        "trajectory_mae": 0.012770113199735067,
+        "eol_cycle_mae": 4.809201428592658,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.051230912850913135,
+        "rmse": 0.09243602929306302,
+        "mape": 7.892299647199552,
+        "max_abs_error": 0.27305077418299795,
+        "r2": 0.17736058308013603,
+        "n": 18,
+        "trajectory_rmse": 0.07859589404407584,
+        "trajectory_mae": 0.051230912850913135,
+        "eol_cycle_mae": 11.073115207892577,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02863705144731378,
+        "rmse": 0.05680963282349138,
+        "mape": 4.042924963429823,
+        "max_abs_error": 0.19541186866028393,
+        "r2": 0.2579598609238668,
+        "n": 18,
+        "trajectory_rmse": 0.03905291362018402,
+        "trajectory_mae": 0.02863705144731378,
+        "eol_cycle_mae": 3.40485595917923,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 2,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.012770113199735065,
+        "rmse": 0.02352458758480145,
+        "mape": 1.6080325096455974,
+        "max_abs_error": 0.0923239872930759,
+        "r2": 0.819225922905597,
+        "n": 18,
+        "trajectory_rmse": 0.017347482609420747,
+        "trajectory_mae": 0.012770113199735067,
+        "eol_cycle_mae": 4.809201428592658,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02377282825901846,
+        "rmse": 0.051044703098181654,
+        "mape": 3.4904663813791696,
+        "max_abs_error": 0.18738312848543726,
+        "r2": 0.41895049421981145,
+        "n": 18,
+        "trajectory_rmse": 0.035717196146879335,
+        "trajectory_mae": 0.02377282825901846,
+        "eol_cycle_mae": 6.902400193284706,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.05051385645327808,
+        "rmse": 0.09231941053179343,
+        "mape": 7.784690477979258,
+        "max_abs_error": 0.27305077418299795,
+        "r2": 0.3343870144698339,
+        "n": 18,
+        "trajectory_rmse": 0.07760729825991168,
+        "trajectory_mae": 0.05051385645327808,
+        "eol_cycle_mae": 20.319714328209884,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.07808832275001502,
+    "predict_seconds_per_fold": 0.02789857516669751,
+    "folds": 12
+  },
+  "config": {
+    "name": "empirical-biexponential-forecast-50",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "forecast",
+      "origin": 50,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "empirical_fade",
+      "params": {
+        "form": "biexponential"
+      },
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "e7129973b7c1d793",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:09:23+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

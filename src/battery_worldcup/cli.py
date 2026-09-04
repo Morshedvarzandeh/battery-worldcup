@@ -8,6 +8,7 @@ import sys
 from pathlib import Path
 
 from battery_worldcup import __version__
+from battery_worldcup.benchmark import ExperimentConfig, build_leaderboard, run_experiment
 from battery_worldcup.data import registry
 from battery_worldcup.data.cache import cache_dir, download
 from battery_worldcup.data.loaders import LOADERS, load_dataset
@@ -108,6 +109,28 @@ def cmd_labels(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_run(args: argparse.Namespace) -> int:
+    config = ExperimentConfig.load(args.config)
+    result = run_experiment(config, results_dir=None if args.dry_run else args.results_dir)
+    primary = result["metrics"].get("mae", {})
+    print(f"{config.name}: {len(result['folds'])} runs on {result['dataset']} / {result['task']}")
+    if primary:
+        print(f"  MAE {100 * primary['mean']:.3f} +- {100 * primary['std']:.3f} SOH points")
+    if not args.dry_run:
+        print(f"  written to {result['_path']}")
+    return 0
+
+
+def cmd_leaderboard(args: argparse.Namespace) -> int:
+    text = build_leaderboard(args.results_dir)
+    if args.out:
+        Path(args.out).write_text(text)
+        print(f"written to {args.out}")
+    else:
+        print(text)
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="bwc", description="battery-worldcup command line")
     p.add_argument("--version", action="version", version=f"bwc {__version__}")
@@ -146,6 +169,17 @@ def build_parser() -> argparse.ArgumentParser:
     labels.add_argument("--rules", default=None, help="label-rule key (default: the dataset key)")
     labels.add_argument("--out", default=None, help="write labels to this Parquet file")
     labels.set_defaults(func=cmd_labels)
+
+    run = sub.add_parser("run", help="run an experiment configuration")
+    run.add_argument("config", help="path to a YAML configuration")
+    run.add_argument("--results-dir", default="results")
+    run.add_argument("--dry-run", action="store_true", help="do not write a result file")
+    run.set_defaults(func=cmd_run)
+
+    board = sub.add_parser("leaderboard", help="render the leaderboard from result files")
+    board.add_argument("--results-dir", default="results")
+    board.add_argument("--out", default=None, help="write Markdown here instead of stdout")
+    board.set_defaults(func=cmd_leaderboard)
     return p
 
 

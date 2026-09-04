@@ -24,8 +24,8 @@ whether it knows when it is wrong, and what it costs to run.
 
 ## Status
 
-Phase 0 (foundation) is complete; phases 1 (data layer), 2 (feature layer) and 3 (baselines)
-have started:
+Phase 0 (foundation) is complete; phases 1 (data layer), 2 (feature layer), 3 (baselines) and
+6 (the benchmark) have started:
 
 - the documentation set, decision records and contribution templates;
 - the `battery_worldcup` package: canonical schema with Parquet storage, a synthetic-cell
@@ -41,6 +41,8 @@ have started:
   support vector, random forest, gradient boosting), and an equivalent-circuit Kalman filter
   that needs no aging dataset at all;
 - task views that enforce label visibility, so a model cannot see the labels it is scored on;
+- the benchmark itself: experiment configurations, a runner that writes reproducible result
+  files, point, trajectory and probabilistic metrics, and a leaderboard built from the results;
 - CI running ruff and pytest on Python 3.11 and 3.12.
 
 See [ROADMAP.md](ROADMAP.md) for what comes next.
@@ -53,8 +55,14 @@ pytest                    # unit tests on synthetic cells; nothing is downloaded
 bwc data list             # registered public datasets and their loaders
 bwc synth --out ./syn     # a synthetic bundle in the canonical schema
 bwc labels ./syn          # SOH labels and cycle life per cell
+bwc run configs/synthetic/ridge-nowcast.yaml   # one experiment, writes a result file
+bwc leaderboard --out LEADERBOARD.md           # rebuild the leaderboard from results/
 bwc data convert oxford --src Oxford_Battery_Degradation_Dataset_1.mat   # after a manual download
 ```
+
+[LEADERBOARD.md](LEADERBOARD.md) holds the current standings. They run on synthetic cells only,
+which tests the plumbing rather than the science; the real rankings wait for the wave-1
+datasets.
 
 ## Documentation map
 
@@ -68,6 +76,7 @@ bwc data convert oxford --src Oxford_Battery_Degradation_Dataset_1.mat   # after
 | [docs/06-reading-list.md](docs/06-reading-list.md) | Key papers, reviews, datasets and tools |
 | [docs/glossary.md](docs/glossary.md) | Terms and abbreviations |
 | [docs/decisions/](docs/decisions/) | Records of decisions that are hard to reverse |
+| [LEADERBOARD.md](LEADERBOARD.md) | Current standings, generated from `results/` |
 | [ROADMAP.md](ROADMAP.md) | The phased plan to build all of the above |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to add a dataset, a model, or a result |
 
@@ -94,15 +103,15 @@ battery-worldcup/
 ├── src/battery_worldcup/
 │   ├── data/                  # schema.py, registry.py, cache.py, synthetic.py, loaders/
 │   ├── labels/                # SOH labels from reference tests (soh.py)
-│   ├── tasks/                 # splits.py and assemble.py; full task definitions in phase 6
-│   ├── metrics/               # point.py now; trajectory, probabilistic and cost metrics in phase 6
+│   ├── tasks/                 # splits.py and assemble.py; the remaining task types in phase 6
+│   ├── metrics/               # point.py, trajectory.py, probabilistic.py
 │   ├── features/              # ica.py, partial_charge.py, relaxation.py, extract.py; EIS and thermal in phase 2
 │   ├── models/                # base.py, naive.py, empirical.py, regression.py; filters, deep and physics next
-│   ├── benchmark/             # phase 6: runner, result schema, leaderboard builder
+│   ├── benchmark/             # config.py, runner.py, result.py, leaderboard.py
 │   └── cli.py                 # `bwc data ...`, `bwc synth`, `bwc labels`
-├── configs/                   # phase 6: experiment configs (dataset x task x model x split x seed)
-├── splits/                    # phase 6: frozen, versioned split files
-├── results/                   # phase 6: result JSON files and generated leaderboards
+├── configs/                   # experiment configs (dataset x task x model x split x seed)
+├── splits/                    # frozen, versioned split files (phase 1, wave-1 datasets)
+├── results/                   # result JSON files, one per experiment
 ├── notebooks/                 # phase 8: tutorials, one per strategy family
 └── tests/                     # unit tests on synthetic cells, loader tests, CLI tests
 ```

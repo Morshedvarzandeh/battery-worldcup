@@ -1,0 +1,24 @@
+name: ecm-ekf-forecast-50
+dataset:
+  key: synthetic
+  synthetic:
+    n_cells: 12
+    n_cycles: 120
+    rpt_every: 10
+    points_per_step: 40
+    seed: 11
+task:
+  type: forecast
+  origin: 50
+  include_interpolated: false
+split:
+  n_folds: 4
+  seed: 0
+  order_col: cycle_life
+model:
+  name: ecm_ekf
+  params: {}
+seeds:
+- 0
+- 1
+- 2

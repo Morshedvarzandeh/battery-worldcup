@@ -1,0 +1,398 @@
+{
+  "schema": "bwc-result/1",
+  "name": "linear-extrapolation-forecast-50",
+  "dataset": "synthetic",
+  "task": "forecast@50",
+  "model": {
+    "name": "linear_extrapolation",
+    "family": "S7",
+    "params": {
+      "window": 5
+    },
+    "requirements": {
+      "features": false,
+      "timeseries": false,
+      "history": true,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": false
+    }
+  },
+  "metrics": {
+    "eol_censored_cells": {
+      "mean": 1.0,
+      "std": 0.5773502691896257,
+      "n": 12
+    },
+    "eol_cycle_mae": {
+      "mean": 8.063886758051215,
+      "std": 4.332159639364198,
+      "n": 12
+    },
+    "eol_scored_cells": {
+      "mean": 1.5,
+      "std": 0.6454972243679028,
+      "n": 12
+    },
+    "mae": {
+      "mean": 0.03026740637332388,
+      "std": 0.012196082341147801,
+      "n": 12
+    },
+    "mape": {
+      "mean": 4.3777401675785415,
+      "std": 2.012065857690045,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.18395816671701995,
+      "std": 0.062285173574989416,
+      "n": 12
+    },
+    "n": {
+      "mean": 18.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "n_cells": {
+      "mean": 3.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.4734767640614166,
+      "std": 0.23762749012367268,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.05569998138502389,
+      "std": 0.02298446471940088,
+      "n": 12
+    },
+    "trajectory_mae": {
+      "mean": 0.03026740637332388,
+      "std": 0.012196082341147801,
+      "n": 12
+    },
+    "trajectory_rmse": {
+      "mean": 0.043916715192668376,
+      "std": 0.019546992101152464,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.01452203312086329,
+        "rmse": 0.025099604076065,
+        "mape": 1.835680559633962,
+        "max_abs_error": 0.09563797283072273,
+        "r2": 0.7942092461992285,
+        "n": 18,
+        "trajectory_rmse": 0.02041909813574117,
+        "trajectory_mae": 0.01452203312086329,
+        "eol_cycle_mae": 6.782262843210205,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.040186469739006955,
+        "rmse": 0.07122324704526267,
+        "mape": 5.748988964249174,
+        "max_abs_error": 0.20843184503874623,
+        "r2": 0.322894375591553,
+        "n": 18,
+        "trajectory_rmse": 0.06089947058859071,
+        "trajectory_mae": 0.04018646973900696,
+        "eol_cycle_mae": 2.3258241699780413,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.038501677397960975,
+        "rmse": 0.07431134079599137,
+        "mape": 5.982161911309078,
+        "max_abs_error": 0.2671948628480342,
+        "r2": 0.24332337567320161,
+        "n": 18,
+        "trajectory_rmse": 0.05578639627432602,
+        "trajectory_mae": 0.038501677397960975,
+        "eol_cycle_mae": 16.143184482948193,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02785944523546428,
+        "rmse": 0.05742976374297444,
+        "mape": 3.944129235121953,
+        "max_abs_error": 0.19739282774961864,
+        "r2": 0.4958514149758654,
+        "n": 18,
+        "trajectory_rmse": 0.03856189577201559,
+        "trajectory_mae": 0.02785944523546428,
+        "eol_cycle_mae": 5.1489127832578845,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02563899887072186,
+        "rmse": 0.04465890646399615,
+        "mape": 3.6089403849633426,
+        "max_abs_error": 0.15919458264018327,
+        "r2": 0.7173829845398852,
+        "n": 18,
+        "trajectory_rmse": 0.03576393994770718,
+        "trajectory_mae": 0.025638998870721855,
+        "eol_cycle_mae": 8.67516423412556,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02994781857475307,
+        "rmse": 0.057938873280763165,
+        "mape": 4.217624035597766,
+        "max_abs_error": 0.19739282774961864,
+        "r2": 0.22816667801050483,
+        "n": 18,
+        "trajectory_rmse": 0.04097873923400985,
+        "trajectory_mae": 0.029947818574753066,
+        "eol_cycle_mae": 5.1489127832578845,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 2,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.01452203312086329,
+        "rmse": 0.025099604076065,
+        "mape": 1.835680559633962,
+        "max_abs_error": 0.09563797283072273,
+        "r2": 0.7942092461992285,
+        "n": 18,
+        "trajectory_rmse": 0.02041909813574117,
+        "trajectory_mae": 0.01452203312086329,
+        "eol_cycle_mae": 6.782262843210205,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.05096077492695728,
+        "rmse": 0.09242171330665787,
+        "mape": 7.8487156901190955,
+        "max_abs_error": 0.2671948628480342,
+        "r2": 0.1776153751309958,
+        "n": 18,
+        "trajectory_rmse": 0.07850508345321527,
+        "trajectory_mae": 0.05096077492695728,
+        "eol_cycle_mae": 9.793844418800674,
+        "eol_scored_cells": 2,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.02994781857475307,
+        "rmse": 0.057938873280763165,
+        "mape": 4.217624035597766,
+        "max_abs_error": 0.19739282774961864,
+        "r2": 0.22816667801050483,
+        "n": 18,
+        "trajectory_rmse": 0.04097873923400985,
+        "trajectory_mae": 0.029947818574753066,
+        "eol_cycle_mae": 5.1489127832578845,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 2,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.01452203312086329,
+        "rmse": 0.025099604076065,
+        "mape": 1.835680559633962,
+        "max_abs_error": 0.09563797283072273,
+        "r2": 0.7942092461992285,
+        "n": 18,
+        "trajectory_rmse": 0.02041909813574117,
+        "trajectory_mae": 0.01452203312086329,
+        "eol_cycle_mae": 6.782262843210205,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.026251857490021062,
+        "rmse": 0.0448482790655462,
+        "mape": 3.702585110064923,
+        "max_abs_error": 0.15919458264018327,
+        "r2": 0.5514577703475438,
+        "n": 18,
+        "trajectory_rmse": 0.036626943318395444,
+        "trajectory_mae": 0.02625185749002106,
+        "eol_cycle_mae": 6.4514601972473145,
+        "eol_scored_cells": 3,
+        "eol_censored_cells": 0,
+        "n_cells": 3
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 18,
+      "metrics": {
+        "mae": 0.05034791630765808,
+        "rmse": 0.09232996741013672,
+        "mape": 7.755070965017513,
+        "max_abs_error": 0.2671948628480342,
+        "r2": 0.3342347778592587,
+        "n": 18,
+        "trajectory_rmse": 0.07764208008252702,
+        "trajectory_mae": 0.05034791630765808,
+        "eol_cycle_mae": 17.583636714110526,
+        "eol_scored_cells": 1,
+        "eol_censored_cells": 1,
+        "n_cells": 3
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.0010116726665880076,
+    "predict_seconds_per_fold": 0.007044217333297335,
+    "folds": 12
+  },
+  "config": {
+    "name": "linear-extrapolation-forecast-50",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "forecast",
+      "origin": 50,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "linear_extrapolation",
+      "params": {
+        "window": 5
+      },
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "bf21ba4c33f96486",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:10:29+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}

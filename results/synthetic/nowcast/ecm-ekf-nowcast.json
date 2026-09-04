@@ -1,0 +1,300 @@
+{
+  "schema": "bwc-result/1",
+  "name": "ecm-ekf-nowcast",
+  "dataset": "synthetic",
+  "task": "nowcast",
+  "model": {
+    "name": "ecm_ekf",
+    "family": "S2",
+    "params": {
+      "r0_ohm": 0.05,
+      "r1_ohm": 0.0,
+      "c1_farad": 2000.0,
+      "sigma_v": 0.005,
+      "forgetting": 0.3,
+      "min_soc_span": 0.2,
+      "adapt_r0": true
+    },
+    "requirements": {
+      "features": false,
+      "timeseries": true,
+      "history": false,
+      "full_charge": false,
+      "rest": false,
+      "temperature": false,
+      "eis": false,
+      "training_cells": false
+    }
+  },
+  "metrics": {
+    "mae": {
+      "mean": 0.007186530544480972,
+      "std": 0.0002650873972792742,
+      "n": 12
+    },
+    "mape": {
+      "mean": 0.8058013859350481,
+      "std": 0.027123337362910366,
+      "n": 12
+    },
+    "max_abs_error": {
+      "mean": 0.010140812011915273,
+      "std": 0.0005246158554379065,
+      "n": 12
+    },
+    "n": {
+      "mean": 36.0,
+      "std": 0.0,
+      "n": 12
+    },
+    "r2": {
+      "mean": 0.9908461867156366,
+      "std": 0.0032156471851533764,
+      "n": 12
+    },
+    "rmse": {
+      "mean": 0.007719212494335759,
+      "std": 0.0002260073086959085,
+      "n": 12
+    }
+  },
+  "folds": [
+    {
+      "fold": 0,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007530813399200315,
+        "rmse": 0.00799662401660006,
+        "mape": 0.8371928015013822,
+        "max_abs_error": 0.010894867934871932,
+        "r2": 0.9856488743723066,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.006755025461317087,
+        "rmse": 0.007370826738803985,
+        "mape": 0.7562924799393461,
+        "max_abs_error": 0.010174547859008176,
+        "r2": 0.9936772712877477,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007103111358664306,
+        "rmse": 0.0076377483450654204,
+        "mape": 0.8123211566913335,
+        "max_abs_error": 0.009744490853898502,
+        "r2": 0.993295851220324,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 0,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007357171958742183,
+        "rmse": 0.00787013348592582,
+        "mape": 0.8173991056081304,
+        "max_abs_error": 0.010186270543001807,
+        "r2": 0.9910214682666327,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007261894283410768,
+        "rmse": 0.007805904306289797,
+        "mape": 0.8148564007883962,
+        "max_abs_error": 0.010186270543001807,
+        "r2": 0.991706941209109,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.00716937052841626,
+        "rmse": 0.007655951007784967,
+        "mape": 0.8132372049703934,
+        "max_abs_error": 0.009426980720361744,
+        "r2": 0.9912473228804421,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007530813399200315,
+        "rmse": 0.00799662401660006,
+        "mape": 0.8371928015013822,
+        "max_abs_error": 0.010894867934871932,
+        "r2": 0.9856488743723066,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 1,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.006784043966896549,
+        "rmse": 0.007420078153884294,
+        "mape": 0.7579191364800207,
+        "max_abs_error": 0.010174547859008176,
+        "r2": 0.9947422494359046,
+        "n": 36
+      }
+    },
+    {
+      "fold": 0,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.00716937052841626,
+        "rmse": 0.007655951007784967,
+        "mape": 0.8132372049703934,
+        "max_abs_error": 0.009426980720361744,
+        "r2": 0.9912473228804421,
+        "n": 36
+      }
+    },
+    {
+      "fold": 1,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.007530813399200315,
+        "rmse": 0.00799662401660006,
+        "mape": 0.8371928015013822,
+        "max_abs_error": 0.010894867934871932,
+        "r2": 0.9856488743723066,
+        "n": 36
+      }
+    },
+    {
+      "fold": 2,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.0068752849177949665,
+        "rmse": 0.00738475153495742,
+        "mape": 0.7879097685854952,
+        "max_abs_error": 0.009498780696723719,
+        "r2": 0.9920654352775169,
+        "n": 36
+      }
+    },
+    {
+      "fold": 3,
+      "seed": 2,
+      "n_train_cells": 6,
+      "n_test_cells": 3,
+      "n_targets": 36,
+      "metrics": {
+        "mae": 0.00717065333251235,
+        "rmse": 0.007839333301732272,
+        "mape": 0.7848657686829219,
+        "max_abs_error": 0.010186270543001807,
+        "r2": 0.9942037550125987,
+        "n": 36
+      }
+    }
+  ],
+  "cost": {
+    "fit_seconds_per_fold": 0.02250173966676054,
+    "predict_seconds_per_fold": 2.279518287666633,
+    "folds": 12
+  },
+  "config": {
+    "name": "ecm-ekf-nowcast",
+    "dataset": {
+      "key": "synthetic",
+      "bundle": null,
+      "synthetic": {
+        "n_cells": 12,
+        "n_cycles": 120,
+        "rpt_every": 10,
+        "points_per_step": 40,
+        "seed": 11
+      }
+    },
+    "task": {
+      "type": "nowcast",
+      "origin": null,
+      "include_interpolated": false,
+      "eol_threshold": 0.8
+    },
+    "split": {
+      "n_folds": 4,
+      "seed": 0,
+      "group_col": null,
+      "order_col": "cycle_life",
+      "version": "v1"
+    },
+    "model": {
+      "name": "ecm_ekf",
+      "params": {},
+      "seed_param": null
+    },
+    "seeds": [
+      0,
+      1,
+      2
+    ],
+    "features": null
+  },
+  "config_hash": "5c8047063d34edb6",
+  "git_commit": "52b930fb4281b8d0b47b05fa77168f9ee911854d",
+  "created_utc": "2026-09-04T22:09:16+00:00",
+  "environment": {
+    "versions": {
+      "python": "3.11.15",
+      "numpy": "2.4.6",
+      "pandas": "3.0.5",
+      "scipy": "1.17.1",
+      "sklearn": "1.9.0",
+      "pyarrow": "25.0.1"
+    },
+    "platform": "Linux-6.18.44-fc-v24-x86_64-with-glibc2.39"
+  }
+}
