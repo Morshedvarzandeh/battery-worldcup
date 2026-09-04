@@ -24,8 +24,28 @@ whether it knows when it is wrong, and what it costs to run.
 
 ## Status
 
-Phase 0 (foundation). The documentation set below is in place; code lands phase by phase as
-described in [ROADMAP.md](ROADMAP.md).
+Phase 0 (foundation) is complete and phase 1 (data layer) has started:
+
+- the documentation set, decision records and contribution templates;
+- the `battery_worldcup` package: canonical schema with Parquet storage, a synthetic-cell
+  generator, SOH label rules, cell-level split generation, point metrics, a dataset registry,
+  a checksum-verified download cache and the `bwc` command line;
+- an Oxford dataset loader written against the published file structure (validation on the
+  real file is pending, see the dataset card);
+- CI running ruff and pytest on Python 3.11 and 3.12.
+
+See [ROADMAP.md](ROADMAP.md) for what comes next.
+
+## Getting started
+
+```bash
+pip install -e ".[dev]"
+pytest                    # unit tests on synthetic cells; nothing is downloaded
+bwc data list             # registered public datasets and their loaders
+bwc synth --out ./syn     # a synthetic bundle in the canonical schema
+bwc labels ./syn          # SOH labels and cycle life per cell
+bwc data convert oxford --src Oxford_Battery_Degradation_Dataset_1.mat   # after a manual download
+```
 
 ## Documentation map
 
@@ -56,32 +76,26 @@ described in [ROADMAP.md](ROADMAP.md).
 
 See [docs/02-estimation-strategies.md](docs/02-estimation-strategies.md) for the full treatment.
 
-## Planned repository layout
+## Repository layout
 
 ```text
 battery-worldcup/
-├── README.md, ROADMAP.md, CONTRIBUTING.md, LICENSE
+├── README.md, ROADMAP.md, CONTRIBUTING.md, LICENSE, pyproject.toml
 ├── docs/                      # the reference (this documentation set; later a docs site)
 ├── src/battery_worldcup/
-│   ├── data/                  # canonical schema, dataset loaders, registry, caching
-│   ├── labels/                # reference-test detection and SOH label construction
-│   ├── features/              # ICA/DVA, partial-charge, relaxation, EIS, statistical features
-│   ├── models/
-│   │   ├── empirical/         # fade laws, knee models
-│   │   ├── filters/           # ECM + EKF/UKF/PF, dual estimation
-│   │   ├── ml/                # ridge, GPR, SVR, tree ensembles
-│   │   ├── deep/              # CNN, RNN, TCN, Transformer
-│   │   ├── physics/           # PyBaMM-based diagnosis and parameter tracking
-│   │   └── hybrid/            # physics-informed and residual hybrids
-│   ├── tasks/                 # task definitions and split generation
-│   ├── metrics/               # point, trajectory, probabilistic and cost metrics
-│   ├── benchmark/             # runner, result schema, leaderboard builder
-│   └── cli.py                 # `bwc data ...`, `bwc run ...`, `bwc leaderboard`
-├── configs/                   # experiment configs (dataset x task x model x split x seed)
-├── splits/                    # frozen, versioned split files
-├── results/                   # result JSON files and generated leaderboards
-├── notebooks/                 # tutorials, one per strategy family
-└── tests/                     # unit tests on synthetic cells, leakage tests, smoke tests
+│   ├── data/                  # schema.py, registry.py, cache.py, synthetic.py, loaders/
+│   ├── labels/                # SOH labels from reference tests (soh.py)
+│   ├── tasks/                 # splits.py now; task definitions in phase 6
+│   ├── metrics/               # point.py now; trajectory, probabilistic and cost metrics in phase 6
+│   ├── features/              # phase 2: ICA/DVA, partial-charge, relaxation, EIS, statistics
+│   ├── models/                # phases 3 to 5: empirical/, filters/, ml/, deep/, physics/, hybrid/
+│   ├── benchmark/             # phase 6: runner, result schema, leaderboard builder
+│   └── cli.py                 # `bwc data ...`, `bwc synth`, `bwc labels`
+├── configs/                   # phase 6: experiment configs (dataset x task x model x split x seed)
+├── splits/                    # phase 6: frozen, versioned split files
+├── results/                   # phase 6: result JSON files and generated leaderboards
+├── notebooks/                 # phase 8: tutorials, one per strategy family
+└── tests/                     # unit tests on synthetic cells, loader tests, CLI tests
 ```
 
 ## Scope and non-goals

@@ -55,6 +55,8 @@ phases 4 and 5.
 
 ## Phase 0 — Foundation
 
+Status: complete.
+
 Objective: agree on what the repository is, and set up the conventions everything else uses.
 
 Deliverables
@@ -71,6 +73,8 @@ Definition of done
 - `pip install -e .` and `pytest` work on a clean machine.
 
 ## Phase 1 — Data layer
+
+Status: in progress (schema, labels, registry and the Oxford loader exist; see the checklist at the end).
 
 Objective: one schema, many datasets, trustworthy labels.
 
@@ -270,14 +274,18 @@ Deliverables
 
 ## Immediate next steps (phase 0 to phase 1)
 
-1. Add `pyproject.toml`, the `src/battery_worldcup` skeleton, ruff and pytest configuration,
-   and a CI workflow.
-2. Write the canonical schema as dataclasses plus a Parquet writer, with a synthetic-cell
-   generator for tests.
-3. Implement the registry and the first loader (Oxford: small, clean, has pseudo-OCV) and its
-   label rules; then NASA, CALCE and MATR.
-4. Generate the first dataset cards from real loaded data.
-5. Freeze the wave-1 split files.
+- [x] `pyproject.toml`, the `src/battery_worldcup` skeleton, ruff and pytest configuration, and
+      a CI workflow.
+- [x] Canonical schema as column specifications with a Parquet writer, plus a synthetic-cell
+      generator with known ground truth for the tests.
+- [x] Dataset registry, checksum-verified download cache, SOH label rules and cell-level split
+      generation with leakage checks.
+- [x] First loader (Oxford) written against the published file structure. Validation against
+      the real file is pending: the hosting site could not be reached from the development
+      sandbox, so the loader is tested on a structurally identical fake file.
+- [ ] NASA, CALCE and MATR loaders, each validated on the real files.
+- [ ] First dataset cards generated from real loaded data.
+- [ ] Frozen wave-1 split files.
 
 ## What "reference for SOH" means at v1.0
 

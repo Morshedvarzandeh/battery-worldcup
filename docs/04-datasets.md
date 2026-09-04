@@ -65,6 +65,12 @@ drive cycle; every 100 cycles a characterisation with a 1C discharge and a C/25 
 charge and discharge. The pseudo-OCV data make it the reference dataset for degradation-mode
 diagnosis (Birkl et al., 2017).
 
+Loader status: `bwc data convert oxford --src <file.mat>` maps the published structure (cells
+`Cell1` to `Cell8`, characterisations `cyc0000`, `cyc0100`, ..., steps `C1ch`, `C1dc`, `OCVch`,
+`OCVdc` with `t`, `v`, `q`, `T`) into the schema; the 1C discharge capacity is the reference
+capacity and the C/25 capacities are kept as extra columns. The loader is tested on a fake
+file with the same structure; validation on the real file is pending.
+
 ### MATR (Severson 2019, Attia 2020)
 A123 LFP/graphite 18650 cells cycled in a 30 °C chamber with one- and two-step fast-charging
 protocols and 4C discharge, to 80 % capacity. Cycle lives span roughly 150 to 2300 cycles.
